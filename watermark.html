@@ -1,525 +1,273 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>狗蛋去水印</title>
+<meta charset="UTF-8">
+<title>狗蛋去水印 · 增强修复版</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: "#165DFF",
-            secondary: "#4080FF",
-            neutral: "#F5F7FA",
-            dark: "#1D2129",
-          },
-          fontFamily: {
-            inter: ["Inter", "system-ui", "sans-serif"],
-          },
-        },
-      },
-    };
-  </script>
+<script src="https://cdn.tailwindcss.com"></script>
 
-  <style>
-    .card-shadow {
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    }
-  </style>
+<style>
+.card-shadow{box-shadow:0 4px 20px rgba(0,0,0,.08)}
+</style>
 </head>
 
-<body
-  class="font-inter bg-gradient-to-b from-neutral to-gray-100 min-h-screen flex flex-col"
->
-  <!-- Header -->
-  <header
-    class="bg-white/80 backdrop-blur border-b border-gray-100 sticky top-0 z-10"
-  >
-    <div
-      class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between"
-    >
-      <div class="flex items-center space-x-2">
-        <div
-          class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center"
-        >
-          <span class="text-primary font-semibold text-lg">狗</span>
-        </div>
-        <div>
-          <div class="text-lg font-semibold text-dark">狗蛋去水印</div>
-          <div class="text-xs text-gray-400">专治右下角「豆包AI生成」</div>
-        </div>
-      </div>
-      <div class="hidden md:flex items-center space-x-4 text-sm text-gray-500">
-        <span class="flex items-center">
-          <span
-            class="w-2 h-2 rounded-full bg-emerald-400 mr-1.5"
-          ></span>
-          本地处理 · 不上传服务器
-        </span>
-      </div>
-    </div>
-  </header>
+<body class="bg-gray-100">
 
-  <!-- Main -->
-  <main class="flex-grow max-w-6xl mx-auto px-4 py-8 w-full">
-    <!-- 顶部介绍 -->
-    <section class="mb-6">
-      <div
-        class="bg-white rounded-2xl card-shadow p-5 flex flex-col md:flex-row md:items-center justify-between gap-4"
-      >
-        <div>
-          <h1 class="text-xl md:text-2xl font-semibold text-dark mb-2">
-            一键去掉右下角水印
-          </h1>
-          <p class="text-gray-500 text-sm md:text-base">
-            支持批量上传图片，仅处理右下角「豆包AI生成」相关文案，自动按背景内容智能覆盖。
-          </p>
-          <div class="flex flex-wrap gap-2 mt-3 text-xs">
-            <span
-              class="px-2.5 py-1 rounded-full bg-primary/5 text-primary"
-              >本地处理</span
-            >
-            <span
-              class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600"
-              >图片不上传服务器</span
-            >
-            <span
-              class="px-2.5 py-1 rounded-full bg-gray-100 text-gray-600"
-              >支持批量上传</span
-            >
-          </div>
-        </div>
-        <div class="grid grid-cols-3 gap-2 text-xs text-gray-500">
-          <div class="flex flex-col items-center">
-            <div
-              class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mb-1 text-primary text-sm"
-            >
-              1
-            </div>
-            <span>上传图片</span>
-          </div>
-          <div class="flex flex-col items-center">
-            <div
-              class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mb-1 text-primary text-sm"
-            >
-              2
-            </div>
-            <span>一键去水印</span>
-          </div>
-          <div class="flex flex-col items-center">
-            <div
-              class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mb-1 text-primary text-sm"
-            >
-              3
-            </div>
-            <span>下载图片</span>
-          </div>
-        </div>
-      </div>
-    </section>
+<header class="bg-white border-b py-4 mb-4 text-center text-lg font-semibold">
+狗蛋去水印 · 智能背景修复增强版
+</header>
 
-    <!-- 主体区域：左侧上传 / 右侧预览 -->
-    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-      <!-- 上传区域 -->
-      <div class="lg:col-span-1">
-        <div class="bg-white rounded-2xl card-shadow p-6">
-          <h2 class="text-base font-semibold text-dark mb-1">上传图片</h2>
-          <p class="text-xs text-gray-500 mb-4">
-            支持拖拽或点击上传，单张 ≤ 5MB，单次最多 20 张。
-          </p>
+<main class="max-w-6xl mx-auto px-4 pb-12">
 
-          <div
-            id="drop-area"
-            class="border border-dashed border-gray-300 rounded-xl px-4 py-8 text-center transition-all bg-gray-50 hover:bg-gray-100 cursor-pointer"
-          >
-            <div class="flex flex-col items-center">
-              <div
-                class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-3"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-6 w-6 text-primary"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="1.5"
-                    d="M3 15.75l7.5-7.5 4.5 4.5L21 6.75M4.5 19.5h15"
-                  />
-                </svg>
-              </div>
-              <p class="text-sm text-dark mb-1">拖拽图片到此处，或</p>
-              <button
-                id="upload-btn"
-                class="inline-flex items-center px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-primary/90"
-              >
-                选择图片
-              </button>
-              <p class="text-xs text-gray-400 mt-2">支持 JPG / JPEG / PNG</p>
-            </div>
-            <input
-              id="file-input"
-              type="file"
-              multiple
-              accept="image/*"
-              class="hidden"
-            />
-          </div>
+<section class="bg-white rounded-xl card-shadow p-6 mb-5 text-sm">
+✅ 本地纯前端处理 · ✅ 支持批量上传  
+✅ 不裁剪、不压缩、不拉伸  
+✅ 按行复制 + 梯度融合 + 边缘柔化
+</section>
 
-          <div class="mt-4 space-y-1 text-xs text-gray-500">
-            <div class="flex items-center justify-between">
-              <span>已选择图片：</span>
-              <span id="file-count" class="font-medium text-dark">0 张</span>
-            </div>
-            <div class="border-t border-dashed border-gray-200 pt-3 mt-2">
-              <p class="flex items-start">
-                <span
-                  class="w-1.5 h-1.5 rounded-full bg-primary mr-2 mt-1"
-                ></span>
-                仅覆盖右下角区域，不裁剪、不缩放原图尺寸。
-              </p>
-              <p class="flex items-start">
-                <span
-                  class="w-1.5 h-1.5 rounded-full bg-primary mr-2 mt-1"
-                ></span>
-                去水印过程完全在浏览器本地完成。
-              </p>
-            </div>
-          </div>
-        </div>
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <!-- 操作按钮 -->
-        <div class="bg-white rounded-2xl card-shadow p-4 mt-4">
-          <button
-            id="process-btn"
-            class="w-full flex items-center justify-center px-4 py-2.5 rounded-lg bg-secondary text-white text-sm font-medium hover:bg-secondary/90 disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            <span id="process-btn-text" class="flex items-center">
-              <span class="mr-2">🧼</span>
-              一键覆盖右下角水印
-            </span>
-          </button>
-        </div>
-      </div>
+<!-- Upload -->
+<div class="bg-white rounded-xl p-5 card-shadow">
+<h2 class="font-semibold mb-2">上传图片</h2>
+<div id="drop-area"
+class="border border-dashed border-gray-300 rounded-lg py-10 text-center cursor-pointer hover:bg-gray-50">
 
-      <!-- 预览区域 -->
-      <div class="lg:col-span-2">
-        <div
-          class="bg-white rounded-2xl card-shadow p-5 h-full flex flex-col"
-        >
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="text-base font-semibold text-dark">图片预览与下载</h2>
-            <span class="text-xs text-gray-400"
-              >去水印完成后，可单张下载处理后的图片</span
-            >
-          </div>
+<p class="mb-2">拖拽或点击上传</p>
 
-          <div
-            id="empty-hint"
-            class="flex-1 flex items-center justify-center text-gray-400 text-sm py-10"
-          >
-            暂未上传图片，请先在左侧选择或拖拽图片。
-          </div>
+<button class="bg-blue-600 text-white px-5 py-2 rounded" id="upload-btn">
+选择图片
+</button>
 
-          <div id="preview-container" class="flex-1 hidden">
-            <div
-              id="preview-grid"
-              class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"
-            >
-              <!-- 动态插入卡片 -->
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
+<input id="file-input" type="file" multiple accept="image/*" hidden>
+<p class="text-xs mt-2 text-gray-400">(单张≤5MB，最多20张)</p>
+</div>
 
-  <!-- Footer -->
-  <footer class="bg-white border-t border-gray-100 py-4 mt-8">
-    <div
-      class="max-w-6xl mx-auto px-4 text-center text-xs text-gray-400"
-    >
-      © 2025 狗蛋去水印 · 本工具仅作学习交流使用，请勿用于违规用途
-    </div>
-  </footer>
+<p class="mt-3 text-sm">已选择：
+<span id="file-count" class="font-semibold">0</span> 张</p>
 
-  <!-- JS -->
-  <script>
-    const uploadBtn = document.getElementById("upload-btn");
-    const fileInput = document.getElementById("file-input");
-    const dropArea = document.getElementById("drop-area");
-    const previewGrid = document.getElementById("preview-grid");
-    const previewContainer = document.getElementById("preview-container");
-    const emptyHint = document.getElementById("empty-hint");
-    const fileCount = document.getElementById("file-count");
-    const processBtn = document.getElementById("process-btn");
-    const processBtnText = document.getElementById("process-btn-text");
+<button id="process-btn"
+class="w-full mt-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">
+一键去水印
+</button>
+</div>
 
-    const MAX_FILES = 20;
-    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+<!-- Preview -->
+<div class="bg-white rounded-xl p-5 card-shadow col-span-2 flex flex-col">
+<h2 class="font-semibold mb-3">图片预览 / 下载</h2>
 
-    /* ------------ 工具函数：加载图片、下载 ------------ */
+<div id="empty-hint" class="flex-1 flex items-center justify-center text-gray-400">
+暂无图片
+</div>
 
-    function loadImage(src) {
-      return new Promise((res) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => res(img);
-        img.src = src;
-      });
+<div id="preview-container" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+</div>
+</div>
+
+</section>
+
+</main>
+
+<footer class="bg-white border-t py-3 text-center text-sm text-gray-400">
+© 2025 狗蛋去水印·增强修复算法
+</footer>
+
+<!-- JS -->
+<script>
+
+const uploadBtn = document.getElementById('upload-btn');
+const fileInput = document.getElementById('file-input');
+const dropArea = document.getElementById('drop-area');
+const previewGrid = document.getElementById('preview-container');
+const hint = document.getElementById('empty-hint');
+const fileCount = document.getElementById('file-count');
+const processBtn = document.getElementById('process-btn');
+
+const MAX_FILES = 20;
+
+
+/* ---------------- 工具 ---------------- */
+
+function readFile(file){
+    return new Promise(res=>{
+        const r = new FileReader();
+        r.onload=e=>res(e.target.result);
+        r.readAsDataURL(file);
+    });
+}
+
+function loadImage(src){
+    return new Promise(res=>{
+        const img=new Image();
+        img.crossOrigin="anonymous";
+        img.onload=()=>res(img);
+        img.src=src;
+    });
+}
+
+function download(data,name){
+    const a=document.createElement('a');
+    a.href=data;
+    a.download=name;
+    a.click();
+}
+
+/* ---------------- 水印增强修复算法 ---------------- */
+
+async function enhancedRemoveWatermark(src){
+
+    const img=await loadImage(src);
+    const c=document.createElement("canvas");
+    const ctx=c.getContext("2d");
+
+    c.width=img.width;
+    c.height=img.height;
+
+    ctx.drawImage(img,0,0);
+
+    // 水印区域
+    const w=img.width*0.18;
+    const h=img.height*0.1;
+
+    const x=img.width-w-10;
+    const y=img.height-h-10;
+
+    // 连续多行复制
+    for(let row=0; row<h; row++){
+
+        let srcY=y-row-2;
+        if(srcY<0) srcY=0;
+
+        const data=ctx.getImageData(x,srcY,w,1);
+
+        const alpha = row/h;          // 渐变系数
+        ctx.globalAlpha=alpha*0.9+0.1;
+
+        ctx.putImageData(data,x,y+row);
+
     }
 
-    function readFileAsURL(file) {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.readAsDataURL(file);
-      });
-    }
+    ctx.globalAlpha=1;
 
-    function safeFilename(name) {
-      return (name || "image")
-        .replace(/\.[^.]+$/, "")
-        .replace(/[^\w\u4e00-\u9fa5-]+/g, "_") + "_clean.png";
-    }
+    // 柔化边缘
+    ctx.globalAlpha=.35;
+    ctx.filter="blur(6px)";
+    ctx.drawImage(c,x,y,w,h,x,y,w,h);
 
-    function downloadImage(dataUrl, filename) {
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
+    ctx.globalAlpha=1;
+    ctx.filter="none";
 
-    /* ------------ 去水印核心：复制上一块区域覆盖 ------------ */
+    return c.toDataURL("image/png");
+}
 
-    async function coverWatermark(imgSrc) {
-      const img = await loadImage(imgSrc);
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
 
-      canvas.width = img.width;
-      canvas.height = img.height;
+/* ---------------- UI ---------------- */
 
-      // 画原图
-      ctx.drawImage(img, 0, 0);
+function createItem(src,name){
 
-      // 右下角水印区域（按比例，可按需要微调）
-      const w = img.width * 0.18;
-      const h = img.height * 0.1;
-      const paddingX = 8;
-      const paddingY = 8;
+    const d=document.createElement("div");
+    d.className="bg-gray-50 rounded-xl border p-3";
 
-      const x = img.width - w - paddingX;
-      const y = img.height - h - paddingY;
-
-      // 从水印正上方复制一块内容覆盖下来
-      const srcY = Math.max(0, y - h); // 上方一块区域
-      const copyHeight = Math.min(h, y); // 防止越界
-      const imageData = ctx.getImageData(x, srcY, w, copyHeight);
-
-      // 把这块区域“搬下来”覆盖掉水印区域
-      ctx.putImageData(imageData, x, y);
-
-      // 轻微模糊一下边缘，让过渡更自然（可选）
-      ctx.globalAlpha = 0.4;
-      ctx.filter = "blur(4px)";
-      ctx.drawImage(
-        canvas,
-        x - 4,
-        y - 4,
-        w + 8,
-        h + 8,
-        x,
-        y,
-        w,
-        h
-      );
-      ctx.globalAlpha = 1;
-      ctx.filter = "none";
-
-      return canvas.toDataURL("image/png");
-    }
-
-    /* ------------ 生成预览卡片：不裁剪图片 ------------ */
-
-    function createPreviewItem(src, filename) {
-      const item = document.createElement("div");
-      item.className =
-        "relative bg-gray-50 rounded-xl border border-gray-100 p-3 flex flex-col";
-      item.dataset.filename = filename || "image.png";
-      item.dataset.processed = "false";
-
-      item.innerHTML = `
+    d.innerHTML=`
         <div class="relative mb-2">
-          <div class="w-full bg-white rounded-lg overflow-hidden flex items-center justify-center">
-            <!-- 关键：用 object-contain + max-h，保证不裁剪图片，只限制最大高度 -->
-            <img src="${src}" class="max-h-72 max-w-full object-contain bg-white" />
-          </div>
-          <button class="absolute top-2 right-2 text-xs px-2 py-1 rounded-full bg-white/90 hover:bg-white text-gray-500 hover:text-red-500 shadow-sm">
-            删除
-          </button>
+            <img src="${src}" class="max-h-56 w-full object-contain bg-white rounded">
+            <button class="absolute top-2 right-2 bg-white/90 px-2 py-1 text-xs rounded shadow delete-btn">删除</button>
         </div>
-        <div class="flex-1 flex flex-col justify-between">
-          <div class="mb-2">
-            <div class="text-xs font-medium text-dark truncate" title="${filename || "未命名图片"}">
-              ${filename || "未命名图片"}
-            </div>
-            <div class="mt-1">
-              <span class="inline-flex items-center text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 status-badge">
-                待处理
-              </span>
-            </div>
-          </div>
-          <div class="flex items-center justify-between mt-1">
-            <button class="text-xs px-2.5 py-1 rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200 download-btn opacity-40 cursor-not-allowed">
-              下载去水印图
-            </button>
-          </div>
-        </div>
-      `;
 
-      const img = item.querySelector("img");
-      const deleteBtn = item.querySelector("button");
-      const downloadBtn = item.querySelector(".download-btn");
+        <p class="text-xs truncate mb-2">${name}</p>
 
-      deleteBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        item.remove();
-        updateStateAfterChange();
-      });
+        <span class="status text-xs bg-gray-200 rounded px-2 py-1">待处理</span>
 
-      downloadBtn.addEventListener("click", () => {
-        if (item.dataset.processed !== "true") {
-          alert("请先点击左侧按钮完成去水印，再下载图片。");
-          return;
-        }
-        downloadImage(img.src, safeFilename(item.dataset.filename));
-      });
+        <button class="download-btn mt-2 w-full text-xs bg-blue-100 text-blue-600 py-1 rounded cursor-not-allowed opacity-40">下载去水印图</button>
+    `;
 
-      return item;
+    const del=d.querySelector('.delete-btn');
+    del.onclick=()=>{
+        d.remove();
+        updateState();
+    };
+
+    return d;
+}
+
+async function upload(files){
+
+    const arr=[...files].slice(0,MAX_FILES-previewGrid.children.length);
+
+    for(const f of arr){
+        const src=await readFile(f);
+        previewGrid.appendChild(createItem(src,f.name));
     }
 
-    function updateStateAfterChange() {
-      const count = previewGrid.children.length;
-      fileCount.textContent = `${count} 张`;
-      if (count === 0) {
-        previewContainer.classList.add("hidden");
-        emptyHint.classList.remove("hidden");
-      }
-    }
+    updateState();
+}
 
-    async function handleFiles(files) {
-      const currentCount = previewGrid.children.length;
-      const rest = MAX_FILES - currentCount;
-      if (rest <= 0) {
-        alert(`单次最多支持 ${MAX_FILES} 张图片。`);
+function updateState(){
+    const cnt=previewGrid.children.length;
+    fileCount.textContent = cnt;
+
+    hint.classList.toggle("hidden", cnt>0);
+    previewGrid.classList.toggle("hidden", cnt===0);
+}
+
+/* ---------------- 事件 ---------------- */
+
+uploadBtn.onclick=()=>fileInput.click();
+fileInput.onchange=()=>upload(fileInput.files);
+
+dropArea.onclick=()=>fileInput.click();
+dropArea.ondragover = e=>{
+    e.preventDefault();
+};
+dropArea.ondrop = e=>{
+    e.preventDefault();
+    upload(e.dataTransfer.files);
+};
+
+
+processBtn.onclick=async()=>{
+
+    const cards=[...previewGrid.children];
+
+    if(!cards.length){
+        alert("请先上传图片");
         return;
-      }
-
-      const arr = Array.from(files).slice(0, rest);
-      const oversize = arr.filter((f) => f.size > MAX_SIZE);
-      if (oversize.length) {
-        alert("存在超过 5MB 的图片，已自动忽略大文件。");
-      }
-
-      for (const file of arr) {
-        if (file.size > MAX_SIZE) continue;
-        const src = await readFileAsURL(file);
-        const card = createPreviewItem(src, file.name);
-        previewGrid.appendChild(card);
-      }
-
-      const count = previewGrid.children.length;
-      fileCount.textContent = `${count} 张`;
-      if (count > 0) {
-        previewContainer.classList.remove("hidden");
-        emptyHint.classList.add("hidden");
-      }
     }
 
-    /* ------------ 上传交互 ------------ */
+    processBtn.disabled=true;
+    processBtn.textContent="处理中...";
 
-    uploadBtn.addEventListener("click", () => fileInput.click());
-    fileInput.addEventListener("change", () => handleFiles(fileInput.files));
+    for(const card of cards){
 
-    ["dragenter", "dragover"].forEach((evt) =>
-      dropArea.addEventListener(evt, (e) => {
-        e.preventDefault();
-        dropArea.classList.add("bg-white", "border-primary");
-      })
-    );
+        const img=card.querySelector('img');
+        const status=card.querySelector('.status');
+        const btn=card.querySelector('.download-btn');
 
-    ["dragleave", "drop"].forEach((evt) =>
-      dropArea.addEventListener(evt, (e) => {
-        e.preventDefault();
-        dropArea.classList.remove("bg-white", "border-primary");
-      })
-    );
+        status.textContent="处理中...";
+        status.className="status text-xs bg-yellow-100 px-2 py-1 rounded";
 
-    dropArea.addEventListener("drop", (e) => {
-      handleFiles(e.dataTransfer.files);
-    });
+        const newSrc=await enhancedRemoveWatermark(img.src);
 
-    dropArea.addEventListener("click", () => fileInput.click());
+        img.src=newSrc;
 
-    /* ------------ 批量去水印 & 下载 ------------ */
+        status.textContent="已去水印";
+        status.className="status text-xs bg-green-100 px-2 py-1 rounded";
 
-    processBtn.addEventListener("click", async () => {
-      const cards = Array.from(previewGrid.children);
-      if (cards.length === 0) {
-        alert("请先上传需要处理的图片。");
-        return;
-      }
+        btn.classList.remove("opacity-40","cursor-not-allowed");
+        btn.classList.add("bg-green-500","text-white");
+        btn.textContent="下载图片";
 
-      processBtn.disabled = true;
-      processBtnText.textContent = "处理中，请稍候...";
+        btn.onclick=()=>download(newSrc,"clean_"+Date.now()+".png");
 
-      for (const card of cards) {
-        const img = card.querySelector("img");
-        const badge = card.querySelector(".status-badge");
-        const downloadBtn = card.querySelector(".download-btn");
+    }
 
-        if (card.dataset.processed === "true") continue;
+    processBtn.disabled=false;
+    processBtn.textContent="一键去水印";
+};
 
-        badge.textContent = "处理中...";
-        badge.className =
-          "inline-flex items-center text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 status-badge";
+</script>
 
-        try {
-          const newSrc = await coverWatermark(img.src);
-          img.src = newSrc;
-          card.dataset.processed = "true";
-
-          badge.textContent = "已去水印";
-          badge.className =
-            "inline-flex items-center text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 status-badge";
-
-          downloadBtn.classList.remove("opacity-40", "cursor-not-allowed");
-          downloadBtn.classList.add(
-            "bg-primary/10",
-            "text-primary",
-            "hover:bg-primary/15"
-          );
-        } catch (e) {
-          console.error(e);
-          badge.textContent = "处理失败";
-          badge.className =
-            "inline-flex items-center text-[11px] px-2 py-0.5 rounded-full bg-red-50 text-red-600 status-badge";
-        }
-      }
-
-      processBtn.disabled = false;
-      processBtnText.textContent = "一键覆盖右下角水印";
-    });
-  </script>
 </body>
 </html>
