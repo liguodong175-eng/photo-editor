@@ -3,23 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>批量图片去水印工具 | 无损画质</title>
-  <!-- Tailwind CSS -->
+  <title>精准去水印工具</title>
+  <!-- 引入Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Font Awesome -->
+  <!-- 引入Font Awesome -->
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
   
-  <!-- 自定义配置 -->
+  <!-- 配置Tailwind自定义主题 -->
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            primary: '#3b82f6',
-            secondary: '#64748b',
-            accent: '#10b981',
-            dark: '#1e293b',
-            light: '#f8fafc'
+            primary: '#165DFF',
+            secondary: '#4080FF',
+            neutral: '#F5F7FA',
+            dark: '#1D2129',
           },
           fontFamily: {
             inter: ['Inter', 'system-ui', 'sans-serif'],
@@ -34,406 +33,177 @@
       .content-auto {
         content-visibility: auto;
       }
-      .upload-area {
-        @apply border-2 border-dashed border-primary/30 rounded-xl p-8 text-center transition-all duration-300 hover:border-primary/60 hover:bg-primary/5;
-      }
       .card-shadow {
-        @apply shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
       }
-      .btn-primary {
-        @apply bg-primary text-white px-6 py-3 rounded-lg font-medium transition-all duration-300 hover:bg-primary/90 hover:shadow-md active:scale-95;
+      .hover-lift {
+        transition: transform 0.2s, box-shadow 0.2s;
       }
-      .btn-secondary {
-        @apply bg-secondary text-white px-6 py-3 rounded-lg font-medium transition-all duration-300 hover:bg-secondary/90 hover:shadow-md active:scale-95;
+      .hover-lift:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
       }
     }
   </style>
 </head>
-<body class="font-inter bg-light text-dark min-h-screen flex flex-col">
-  <!-- 头部导航 -->
-  <header class="bg-white shadow-sm sticky top-0 z-50">
+<body class="font-inter bg-gray-50 text-dark min-h-screen flex flex-col">
+  <!-- 顶部导航栏 -->
+  <header class="bg-white border-b border-gray-100 sticky top-0 z-10">
     <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-      <div class="flex items-center gap-2">
-        <i class="fa fa-picture-o text-primary text-2xl"></i>
-        <h1 class="text-xl font-bold">批量去水印工具</h1>
+      <div class="flex items-center space-x-2">
+        <i class="fa fa-magic text-primary text-xl"></i>
+        <h1 class="text-xl font-semibold text-primary">精准去水印工具</h1>
       </div>
-      <div class="hidden md:flex items-center gap-4">
-        <a href="#" class="text-secondary hover:text-primary transition-colors">使用指南</a>
-        <a href="#" class="text-secondary hover:text-primary transition-colors">关于我们</a>
+      
+      <div class="hidden md:flex items-center space-x-6">
+        <a href="#" class="text-gray-600 hover:text-primary transition-colors">使用指南</a>
+        <a href="#" class="text-gray-600 hover:text-primary transition-colors">关于我们</a>
+        <button class="bg-primary/10 text-primary px-4 py-2 rounded-md hover:bg-primary/20 transition-colors">
+          <i class="fa fa-lightbulb-o mr-1"></i> AI生成
+        </button>
+      </div>
+      
+      <div class="flex items-center">
+        <img src="https://picsum.photos/id/64/40/40" alt="用户头像" class="w-8 h-8 rounded-full object-cover border-2 border-primary/20">
       </div>
     </div>
   </header>
 
-  <!-- 主要内容 -->
+  <!-- 主要内容区 -->
   <main class="flex-grow container mx-auto px-4 py-8">
-    <!-- 介绍区域 -->
-    <section class="mb-8 text-center max-w-3xl mx-auto">
-      <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-4 text-dark">无损画质 · 批量去水印</h2>
-      <p class="text-secondary mb-6">支持JPG、PNG、WebP等格式，保持原图分辨率，简单水印一键去除</p>
-    </section>
-
-    <!-- 上传区域 -->
-    <section class="mb-10">
-      <div id="uploadArea" class="upload-area mb-6">
-        <input type="file" id="fileInput" class="hidden" accept="image/*" multiple>
-        <div class="flex flex-col items-center justify-center gap-4">
-          <i class="fa fa-cloud-upload text-primary text-5xl"></i>
-          <p class="text-secondary">点击或拖拽图片到此处上传</p>
-          <p class="text-sm text-secondary/70">支持批量上传，单张最大5MB，保持原图画质</p>
-          <button onclick="document.getElementById('fileInput').click()" class="btn-primary">
-            <i class="fa fa-plus mr-2"></i>选择图片
-          </button>
-        </div>
+    <!-- 功能介绍卡片 -->
+    <div class="bg-white rounded-xl p-4 mb-8 card-shadow">
+      <div class="text-center py-2">
+        <p class="text-gray-500 text-sm">支持批量上传，单张最大5MB，仅处理右下角水印</p>
       </div>
-
-      <!-- 上传文件列表 -->
-      <div id="fileList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 hidden">
-        <!-- 动态生成的图片卡片 -->
-      </div>
-    </section>
-
-    <!-- 处理控制区域 -->
-    <section class="mb-10 flex flex-col md:flex-row gap-4 justify-center items-center">
-      <button id="processBtn" class="btn-primary disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100" disabled>
-        <i class="fa fa-magic mr-2"></i>开始去水印
-      </button>
-      <button id="downloadAllBtn" class="btn-secondary hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
-        <i class="fa fa-download mr-2"></i>批量下载
-      </button>
-      <div id="progressContainer" class="hidden w-full max-w-md mt-4">
-        <div class="flex justify-between text-sm mb-1">
-          <span>处理进度</span>
-          <span id="progressText">0%</span>
-        </div>
-        <div class="w-full bg-gray-200 rounded-full h-2.5">
-          <div id="progressBar" class="bg-accent h-2.5 rounded-full w-0 transition-all duration-300"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 预览对比区域 -->
-    <section id="previewSection" class="mb-10 hidden">
-      <h3 class="text-xl font-semibold mb-4 text-center">处理效果对比</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-        <div class="bg-white p-4 rounded-lg card-shadow">
-          <h4 class="text-lg font-medium mb-2 text-center">原图</h4>
-          <div id="originalPreview" class="aspect-auto w-full flex items-center justify-center">
-            <img src="" alt="原图预览" class="max-w-full max-h-[500px] object-contain">
-          </div>
-        </div>
-        <div class="bg-white p-4 rounded-lg card-shadow">
-          <h4 class="text-lg font-medium mb-2 text-center">去水印后</h4>
-          <div id="processedPreview" class="aspect-auto w-full flex items-center justify-center">
-            <img src="" alt="处理后预览" class="max-w-full max-h-[500px] object-contain">
+    </div>
+    
+    <!-- 图片上传区域 -->
+    <div class="bg-white rounded-xl p-8 mb-8 card-shadow hover-lift">
+      <div class="border-2 border-dashed border-gray-200 rounded-lg p-10 text-center">
+        <div class="max-w-md mx-auto">
+          <i class="fa fa-cloud-upload text-4xl text-primary/70 mb-4"></i>
+          <h2 class="text-lg font-medium mb-2">上传图片</h2>
+          <p class="text-gray-500 text-sm mb-6">点击或拖拽图片至此处上传</p>
+          
+          <label class="inline-block">
+            <input type="file" multiple accept="image/*" class="hidden">
+            <button class="bg-primary text-white px-6 py-3 rounded-md font-medium hover:bg-primary/90 transition-colors flex items-center justify-center mx-auto">
+              <i class="fa fa-plus mr-2"></i> 选择图片
+            </button>
+          </label>
+          
+          <div class="mt-6 text-sm text-gray-500">
+            <i class="fa fa-info-circle mr-1"></i> 支持JPG、PNG等常见图片格式
           </div>
         </div>
       </div>
-    </section>
-
-    <!-- 提示区域 -->
-    <section class="bg-primary/5 rounded-lg p-6 max-w-3xl mx-auto">
-      <h3 class="text-lg font-semibold mb-2 flex items-center gap-2">
-        <i class="fa fa-info-circle text-primary"></i>使用提示
-      </h3>
-      <ul class="text-secondary space-y-2 list-disc pl-5">
-        <li>本工具为前端处理，适合去除简单的文字水印、logo水印，复杂水印效果有限</li>
-        <li>处理后的图片保持原图分辨率和画质，无压缩损失</li>
-        <li>建议上传高清图片以获得更好的处理效果</li>
-        <li>所有处理均在本地完成，图片不会上传到服务器，保障隐私安全</li>
-      </ul>
-    </section>
+      
+      <!-- 已上传图片预览区 (默认隐藏) -->
+      <div class="mt-6 hidden" id="preview-container">
+        <h3 class="font-medium mb-3">已上传图片</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4" id="preview-grid">
+          <!-- 图片预览将动态添加到这里 -->
+        </div>
+      </div>
+    </div>
+    
+    <!-- 操作按钮区域 -->
+    <div class="flex justify-center mb-10">
+      <button class="bg-secondary text-white px-6 py-3 rounded-md font-medium hover:bg-secondary/90 transition-colors flex items-center">
+        <i class="fa fa-eraser mr-2"></i> 覆盖右下角水印
+      </button>
+    </div>
+    
+    <!-- 使用说明区域 -->
+    <div class="bg-white rounded-xl p-6 mb-8 card-shadow">
+      <div class="flex items-center mb-4">
+        <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+          <i class="fa fa-book text-primary"></i>
+        </div>
+        <h2 class="text-lg font-semibold">使用说明</h2>
+      </div>
+      
+      <div class="pl-11 space-y-3 text-gray-600">
+        <div class="flex items-start">
+          <i class="fa fa-check-circle text-primary mt-1 mr-2"></i>
+          <p>仅识别并覆盖图片右下角的"豆包AI生成"字样</p>
+        </div>
+        <div class="flex items-start">
+          <i class="fa fa-check-circle text-primary mt-1 mr-2"></i>
+          <p>通过提取背景色填充水印区域，保持视觉一致性</p>
+        </div>
+        <div class="flex items-start">
+          <i class="fa fa-check-circle text-primary mt-1 mr-2"></i>
+          <p>若水印位置/样式变化，可调整代码中"水印区域百分比"适配</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 功能特点区域 -->
+    <div class="bg-primary/5 rounded-xl p-6 mb-8">
+      <div class="flex flex-col md:flex-row items-center">
+        <div class="md:w-1/3 mb-4 md:mb-0">
+          <i class="fa fa-bolt text-4xl text-primary"></i>
+        </div>
+        <div class="md:w-2/3 md:pl-6">
+          <h3 class="font-semibold text-lg mb-2">精准图片去水印工具</h3>
+          <p class="text-gray-600">2025 版本 · 仅处理指定区域 · 保持原图完整 · 操作简单高效</p>
+        </div>
+      </div>
+    </div>
   </main>
 
   <!-- 页脚 -->
-  <footer class="bg-dark text-white py-6">
-    <div class="container mx-auto px-4 text-center">
-      <p class="mb-2">批量图片去水印工具 © 2025</p>
-      <p class="text-sm text-white/70">本地处理 · 无损画质 · 隐私保护</p>
+  <footer class="bg-white border-t border-gray-100 py-6">
+    <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
+      <p>© 2025 精准去水印工具 - 保留所有权利</p>
     </div>
   </footer>
 
+  <!-- JavaScript 功能 -->
   <script>
-    // 全局变量
-    let uploadedFiles = [];
-    let processedBlobs = [];
-    
-    // DOM元素
-    const fileInput = document.getElementById('fileInput');
-    const uploadArea = document.getElementById('uploadArea');
-    const fileList = document.getElementById('fileList');
-    const processBtn = document.getElementById('processBtn');
-    const downloadAllBtn = document.getElementById('downloadAllBtn');
-    const progressContainer = document.getElementById('progressContainer');
-    const progressBar = document.getElementById('progressBar');
-    const progressText = document.getElementById('progressText');
-    const previewSection = document.getElementById('previewSection');
-    const originalPreview = document.querySelector('#originalPreview img');
-    const processedPreview = document.querySelector('#processedPreview img');
-
-    // 初始化拖拽上传
-    function initDragDrop() {
-      // 阻止默认拖拽行为
-      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        uploadArea.addEventListener(eventName, preventDefaults, false);
-        document.body.addEventListener(eventName, preventDefaults, false);
-      });
-
-      // 高亮上传区域
-      ['dragenter', 'dragover'].forEach(eventName => {
-        uploadArea.addEventListener(eventName, highlight, false);
-      });
-
-      ['dragleave', 'drop'].forEach(eventName => {
-        uploadArea.addEventListener(eventName, unhighlight, false);
-      });
-
-      // 处理文件放置
-      uploadArea.addEventListener('drop', handleDrop, false);
-    }
-
-    // 阻止默认行为
-    function preventDefaults(e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-    // 高亮上传区域
-    function highlight() {
-      uploadArea.classList.add('border-primary', 'bg-primary/10');
-    }
-
-    // 取消高亮
-    function unhighlight() {
-      uploadArea.classList.remove('border-primary', 'bg-primary/10');
-    }
-
-    // 处理拖拽文件
-    function handleDrop(e) {
-      const dt = e.dataTransfer;
-      const files = dt.files;
+    // 简单的图片上传预览功能
+    document.querySelector('input[type="file"]').addEventListener('change', function(e) {
+      const files = e.target.files;
       if (files.length > 0) {
-        handleFiles(files);
-      }
-    }
-
-    // 处理选择的文件
-    function handleFiles(files) {
-      // 清空原有列表（可选：保留则注释）
-      uploadedFiles = [];
-      fileList.innerHTML = '';
-      
-      // 过滤非图片文件
-      const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
-      
-      if (imageFiles.length === 0) {
-        alert('请选择图片文件（JPG/PNG/WebP等）');
-        return;
-      }
-      
-      // 限制文件大小（5MB）
-      const maxSize = 5 * 1024 * 1024;
-      const validFiles = imageFiles.filter(file => {
-        if (file.size > maxSize) {
-          alert(`${file.name} 超过5MB，请选择更小的图片`);
-          return false;
-        }
-        return true;
-      });
-      
-      if (validFiles.length === 0) return;
-      
-      // 保存文件并显示预览
-      uploadedFiles = validFiles;
-      fileList.classList.remove('hidden');
-      processBtn.disabled = false;
-      
-      validFiles.forEach((file, index) => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const card = document.createElement('div');
-          card.className = 'bg-white rounded-lg overflow-hidden card-shadow';
-          card.innerHTML = `
-            <div class="relative aspect-square overflow-hidden">
-              <img src="${e.target.result}" alt="${file.name}" class="w-full h-full object-contain">
-              <button onclick="removeFile(${index})" class="absolute top-2 right-2 bg-red-500/80 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors">
+        const previewContainer = document.getElementById('preview-container');
+        const previewGrid = document.getElementById('preview-grid');
+        
+        // 显示预览容器
+        previewContainer.classList.remove('hidden');
+        
+        // 清空现有预览
+        previewGrid.innerHTML = '';
+        
+        // 添加新预览
+        Array.from(files).forEach(file => {
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            const previewItem = document.createElement('div');
+            previewItem.className = 'relative group';
+            
+            previewItem.innerHTML = `
+              <img src="${event.target.result}" alt="预览图" class="w-full h-48 object-cover rounded-md">
+              <button class="absolute top-2 right-2 bg-white/80 hover:bg-white w-6 h-6 rounded-full flex items-center justify-center text-gray-500 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
                 <i class="fa fa-times"></i>
               </button>
-            </div>
-            <div class="p-3">
-              <p class="text-sm truncate">${file.name}</p>
-              <p class="text-xs text-secondary">${(file.size / 1024).toFixed(1)} KB</p>
-            </div>
-          `;
-          fileList.appendChild(card);
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-
-    // 移除单个文件
-    function removeFile(index) {
-      uploadedFiles.splice(index, 1);
-      fileList.removeChild(fileList.children[index]);
-      
-      if (uploadedFiles.length === 0) {
-        fileList.classList.add('hidden');
-        processBtn.disabled = true;
-        previewSection.classList.add('hidden');
-        downloadAllBtn.classList.add('hidden');
-      }
-    }
-
-    // 核心：去水印处理函数（基于Canvas像素处理）
-    async function removeWatermark(file) {
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        
-        img.onload = function() {
-          // 创建Canvas，保持原图尺寸
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          
-          // 绘制原图
-          ctx.drawImage(img, 0, 0);
-          
-          // 获取像素数据
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const data = imageData.data;
-          
-          // 去水印核心逻辑（可根据需求调整）
-          // 原理：检测浅色/半透明像素（水印常见特征），替换为周边像素或调整透明度
-          for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i+1];
-            const b = data[i+2];
-            const a = data[i+3];
+            `;
             
-            // 判断水印像素（可调整阈值，这里针对浅灰色/白色水印）
-            // 阈值说明：RGB值接近255（白色）且透明度>100的像素判定为水印
-            if (r > 220 && g > 220 && b > 220 && a > 100) {
-              // 方法1：透明化（适合纯色背景水印）
-              data[i+3] = 0;
-              
-              // 方法2：替换为周边像素（适合复杂背景，可选启用）
-              // const offset = i - 4 >= 0 ? -4 : 4;
-              // data[i] = data[i + offset];
-              // data[i+1] = data[i+1 + offset];
-              // data[i+2] = data[i+2 + offset];
-              // data[i+3] = data[i+3 + offset];
-            }
-          }
-          
-          // 将处理后的像素放回Canvas
-          ctx.putImageData(imageData, 0, 0);
-          
-          // 转换为Blob（保持原图格式）
-          const format = file.type || 'image/png';
-          canvas.toBlob(blob => {
-            resolve({
-              blob,
-              url: URL.createObjectURL(blob),
-              name: file.name.replace(/\.\w+$/, '') + '_no_watermark' + file.name.match(/\.\w+$/)[0]
+            previewGrid.appendChild(previewItem);
+            
+            // 添加删除功能
+            previewItem.querySelector('button').addEventListener('click', function() {
+              previewItem.remove();
+              if (previewGrid.children.length === 0) {
+                previewContainer.classList.add('hidden');
+              }
             });
-          }, format, 1.0); // 1.0表示无损质量
-        };
-        
-        // 读取文件并加载图片
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-
-    // 批量处理图片
-    async function processImages() {
-      if (uploadedFiles.length === 0) return;
-      
-      // 重置状态
-      processedBlobs = [];
-      progressContainer.classList.remove('hidden');
-      processBtn.disabled = true;
-      downloadAllBtn.classList.add('hidden');
-      
-      // 批量处理
-      for (let i = 0; i < uploadedFiles.length; i++) {
-        const file = uploadedFiles[i];
-        const result = await removeWatermark(file);
-        processedBlobs.push(result);
-        
-        // 更新进度
-        const progress = ((i + 1) / uploadedFiles.length) * 100;
-        progressBar.style.width = `${progress}%`;
-        progressText.textContent = `${Math.round(progress)}%`;
-        
-        // 显示第一张图片的对比预览
-        if (i === 0) {
-          originalPreview.src = URL.createObjectURL(file);
-          processedPreview.src = result.url;
-          previewSection.classList.remove('hidden');
-        }
+          };
+          reader.readAsDataURL(file);
+        });
       }
-      
-      // 处理完成
-      progressContainer.classList.add('hidden');
-      downloadAllBtn.classList.remove('hidden');
-      downloadAllBtn.disabled = false;
-      alert(`处理完成！共处理 ${uploadedFiles.length} 张图片`);
-    }
-
-    // 批量下载处理后的图片
-    function downloadAllImages() {
-      if (processedBlobs.length === 0) return;
-      
-      // 如果只有一张图片，直接下载
-      if (processedBlobs.length === 1) {
-        downloadImage(processedBlobs[0]);
-        return;
-      }
-      
-      // 多张图片打包下载（使用JSZip，需引入CDN）
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
-      script.onload = async () => {
-        const zip = new JSZip();
-        const folder = zip.folder('去水印图片');
-        
-        // 添加所有图片到压缩包
-        for (const item of processedBlobs) {
-          folder.file(item.name, item.blob);
-        }
-        
-        // 生成压缩包并下载
-        const content = await zip.generateAsync({ type: 'blob' });
-        const url = URL.createObjectURL(content);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = '批量去水印图片.zip';
-        a.click();
-        URL.revokeObjectURL(url);
-      };
-      document.body.appendChild(script);
-    }
-
-    // 单个图片下载
-    function downloadImage(item) {
-      const a = document.createElement('a');
-      a.href = item.url;
-      a.download = item.name;
-      a.click();
-    }
-
-    // 事件监听
-    fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
-    processBtn.addEventListener('click', processImages);
-    downloadAllBtn.addEventListener('click', downloadAllImages);
-
-    // 初始化
-    document.addEventListener('DOMContentLoaded', initDragDrop);
+    });
   </script>
 </body>
 </html>
