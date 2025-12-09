@@ -4,12 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>狗蛋去水印</title>
-  <!-- 引入Tailwind CSS -->
+
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- 引入Font Awesome -->
-  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-  
-  <!-- 配置Tailwind自定义主题 -->
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+
+  <!-- Tailwind Custom Theme -->
   <script>
     tailwind.config = {
       theme: {
@@ -27,96 +29,94 @@
       }
     }
   </script>
-  
+
   <style type="text/tailwindcss">
     @layer utilities {
-      .content-auto {
-        content-visibility: auto;
-      }
-      .card-shadow {
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-      }
-      .hover-lift {
-        transition: transform 0.2s, box-shadow 0.2s;
-      }
-      .hover-lift:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
-      }
+      .content-auto { content-visibility: auto; }
+      .card-shadow { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+      .hover-lift { transition: transform .2s, box-shadow .2s; }
+      .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,0,0,.12); }
+      .drop-active { border-color: #165DFF !important; background-color: rgba(22,93,255,0.05); }
     }
   </style>
 </head>
+
 <body class="font-inter bg-gray-50 text-dark min-h-screen flex flex-col">
-  <!-- 顶部导航栏 -->
+
+  <!-- Header -->
   <header class="bg-white border-b border-gray-100 sticky top-0 z-10">
-    <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+    <div class="container mx-auto px-4 py-4 max-w-7xl flex justify-between items-center">
       <div class="flex items-center space-x-2">
         <i class="fa fa-magic text-primary text-xl"></i>
         <h1 class="text-xl font-semibold text-primary">狗蛋去水印</h1>
       </div>
-      
+
       <div class="hidden md:flex items-center space-x-6">
-        <a href="#" class="text-gray-600 hover:text-primary transition-colors">使用指南</a>
-        <a href="#" class="text-gray-600 hover:text-primary transition-colors">关于我们</a>
-        <button class="bg-primary/10 text-primary px-4 py-2 rounded-md hover:bg-primary/20 transition-colors">
+        <a href="#" class="text-gray-600 hover:text-primary">使用指南</a>
+        <a href="#" class="text-gray-600 hover:text-primary">关于我们</a>
+        <button class="bg-primary/10 text-primary px-4 py-2 rounded-md hover:bg-primary/20">
           <i class="fa fa-lightbulb-o mr-1"></i> AI生成
         </button>
       </div>
-      
+
       <div class="flex items-center">
-        <img src="https://picsum.photos/id/64/40/40" alt="用户头像" class="w-8 h-8 rounded-full object-cover border-2 border-primary/20">
+        <img src="https://picsum.photos/id/64/40/40"
+          class="w-8 h-8 rounded-full object-cover border-2 border-primary/20">
       </div>
     </div>
   </header>
 
-  <!-- 主要内容区 -->
-  <main class="flex-grow container mx-auto px-4 py-8">
-    <!-- 功能介绍卡片 -->
+  <!-- Main -->
+  <main class="flex-grow container mx-auto px-4 py-8 max-w-7xl">
+
+    <!-- Info -->
     <div class="bg-white rounded-xl p-4 mb-8 card-shadow">
-      <div class="text-center py-2">
-        <p class="text-gray-500 text-sm">支持批量上传，单张最大5MB，仅处理右下角水印</p>
+      <div class="text-center py-2 text-gray-500 text-sm">
+        支持批量上传，单张最大5MB，仅处理右下角水印
       </div>
     </div>
-    
-    <!-- 图片上传区域 -->
+
+    <!-- Upload Area -->
     <div class="bg-white rounded-xl p-8 mb-8 card-shadow hover-lift">
-      <div class="border-2 border-dashed border-gray-200 rounded-lg p-10 text-center">
+
+      <div id="drop-area" 
+           class="border-2 border-dashed border-gray-200 rounded-lg p-10 text-center transition-all">
         <div class="max-w-md mx-auto">
           <i class="fa fa-cloud-upload text-4xl text-primary/70 mb-4"></i>
           <h2 class="text-lg font-medium mb-2">上传图片</h2>
           <p class="text-gray-500 text-sm mb-6">点击或拖拽图片至此处上传</p>
-          
-          <!-- 修复：添加id关联和button类型 -->
-          <label for="file-upload" class="inline-block cursor-pointer">
-            <input id="file-upload" type="file" multiple accept="image/*" class="hidden">
-            <button type="button" class="bg-primary text-white px-6 py-3 rounded-md font-medium hover:bg-primary/90 transition-colors flex items-center justify-center mx-auto">
-              <i class="fa fa-plus mr-2"></i> 选择图片
-            </button>
-          </label>
-          
+
+          <button id="upload-btn"
+            class="bg-primary text-white px-6 py-3 rounded-md font-medium hover:bg-primary/90 flex items-center justify-center mx-auto">
+            <i class="fa fa-plus mr-2"></i> 选择图片
+          </button>
+
+          <input id="file-input" type="file" multiple accept="image/*" class="hidden">
+
           <div class="mt-6 text-sm text-gray-500">
-            <i class="fa fa-info-circle mr-1"></i> 支持JPG、PNG等常见图片格式
+            <i class="fa fa-info-circle mr-1"></i> 支持 JPG / PNG / JPEG
           </div>
         </div>
       </div>
-      
-      <!-- 已上传图片预览区 (默认隐藏) -->
-      <div class="mt-6 hidden" id="preview-container">
+
+      <!-- Preview -->
+      <div id="preview-container" class="mt-6 hidden">
         <h3 class="font-medium mb-3">已上传图片</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4" id="preview-grid">
-          <!-- 图片预览将动态添加到这里 -->
+        <div id="preview-grid"
+          class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         </div>
       </div>
     </div>
-    
-    <!-- 操作按钮区域 -->
+
+    <!-- Action -->
     <div class="flex justify-center mb-10">
-      <button class="bg-secondary text-white px-6 py-3 rounded-md font-medium hover:bg-secondary/90 transition-colors flex items-center">
+      <button id="process-btn"
+        class="bg-secondary text-white px-6 py-3 rounded-md hover:bg-secondary/90 flex items-center">
         <i class="fa fa-eraser mr-2"></i> 覆盖右下角水印
       </button>
     </div>
-    
-    <!-- 使用说明区域 -->
+
+    <!-- Guide -->
     <div class="bg-white rounded-xl p-6 mb-8 card-shadow">
       <div class="flex items-center mb-4">
         <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mr-3">
@@ -124,87 +124,112 @@
         </div>
         <h2 class="text-lg font-semibold">使用说明</h2>
       </div>
-      
+
       <div class="pl-11 space-y-3 text-gray-600">
         <div class="flex items-start">
           <i class="fa fa-check-circle text-primary mt-1 mr-2"></i>
-          <p>仅识别并覆盖图片右下角的"豆包AI生成"字样</p>
+          <p>仅识别并覆盖图片右下角的“豆包AI生成”字样</p>
         </div>
         <div class="flex items-start">
           <i class="fa fa-check-circle text-primary mt-1 mr-2"></i>
-          <p>通过提取背景色填充水印区域，保持视觉一致性</p>
+          <p>使用背景色智能填充遮盖区域</p>
         </div>
         <div class="flex items-start">
           <i class="fa fa-check-circle text-primary mt-1 mr-2"></i>
-          <p>若水印位置/样式变化，可调整代码中"水印区域百分比"适配</p>
+          <p>若水印位置变动，可调整水印区域配置</p>
         </div>
       </div>
     </div>
-    
-    <!-- 功能特点区域 -->
-    <div class="bg-primary/5 rounded-xl p-6 mb-8">
-      <div class="flex flex-col md:flex-row items-center">
-        <div class="md:w-1/3 mb-4 md:mb-0">
-          <i class="fa fa-bolt text-4xl text-primary"></i>
-        </div>
-        <div class="md:w-2/3 md:pl-6">
-          <h3 class="font-semibold text-lg mb-2">狗蛋去水印工具</h3>
-          <p class="text-gray-600">2025 版本 · 仅处理指定区域 · 保持原图完整 · 操作简单高效</p>
-        </div>
-      </div>
-    </div>
+
   </main>
 
-  <!-- 页脚 -->
+  <!-- Footer -->
   <footer class="bg-white border-t border-gray-100 py-6">
-    <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
-      <p>© 2025 狗蛋去水印 - 保留所有权利</p>
-    </div>
+    <p class="text-center text-gray-500 text-sm">
+      © 2025 狗蛋去水印 - 保留所有权利
+    </p>
   </footer>
 
-  <!-- JavaScript 功能 -->
+  <!-- JS -->
   <script>
-    // 简单的图片上传预览功能
-    document.getElementById('file-upload').addEventListener('change', function(e) {
-      const files = e.target.files;
-      if (files.length > 0) {
-        const previewContainer = document.getElementById('preview-container');
-        const previewGrid = document.getElementById('preview-grid');
-        
-        // 显示预览容器
-        previewContainer.classList.remove('hidden');
-        
-        // 清空现有预览
-        previewGrid.innerHTML = '';
-        
-        // 添加新预览
-        Array.from(files).forEach(file => {
-          const reader = new FileReader();
-          reader.onload = function(event) {
-            const previewItem = document.createElement('div');
-            previewItem.className = 'relative group';
-            
-            previewItem.innerHTML = `
-              <img src="${event.target.result}" alt="预览图" class="w-full h-48 object-cover rounded-md">
-              <button type="button" class="absolute top-2 right-2 bg-white/80 hover:bg-white w-6 h-6 rounded-full flex items-center justify-center text-gray-500 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
-                <i class="fa fa-times"></i>
-              </button>
-            `;
-            
-            previewGrid.appendChild(previewItem);
-            
-            // 添加删除功能
-            previewItem.querySelector('button').addEventListener('click', function() {
-              previewItem.remove();
-              if (previewGrid.children.length === 0) {
-                previewContainer.classList.add('hidden');
-              }
-            });
-          };
-          reader.readAsDataURL(file);
-        });
+    const uploadBtn = document.getElementById("upload-btn");
+    const fileInput = document.getElementById("file-input");
+    const dropArea = document.getElementById("drop-area");
+    const previewContainer = document.getElementById("preview-container");
+    const previewGrid = document.getElementById("preview-grid");
+
+    /* ---- 工具函数 ---- */
+
+    function readFileAsURL(file) {
+      return new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function createPreviewItem(src) {
+      const item = document.createElement("div");
+      item.className = "relative group";
+
+      item.innerHTML = `
+        <img loading="lazy" src="${src}" class="w-full h-48 object-cover rounded-md">
+        <button class="absolute top-2 right-2 bg-white/80 hover:bg-white w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+          <i class="fa fa-times text-sm"></i>
+        </button>
+      `;
+
+      item.querySelector("button").addEventListener("click", () => {
+        item.remove();
+        updatePreviewVisibility();
+      });
+
+      return item;
+    }
+
+    function updatePreviewVisibility() {
+      previewContainer.classList.toggle("hidden", previewGrid.children.length === 0);
+    }
+
+    async function handleFiles(files) {
+      const validFiles = Array.from(files).filter(f => f.size <= 5 * 1024 * 1024);
+
+      for (const file of validFiles) {
+        const src = await readFileAsURL(file);
+        previewGrid.appendChild(createPreviewItem(src));
       }
+
+      updatePreviewVisibility();
+    }
+
+    /* ---- 点击上传 ---- */
+    uploadBtn.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", () => handleFiles(fileInput.files));
+
+    /* ---- 拖拽上传 ---- */
+    ["dragenter", "dragover"].forEach(evt =>
+      dropArea.addEventListener(evt, e => {
+        e.preventDefault();
+        dropArea.classList.add("drop-active");
+      })
+    );
+
+    ["dragleave", "drop"].forEach(evt =>
+      dropArea.addEventListener(evt, e => {
+        e.preventDefault();
+        dropArea.classList.remove("drop-active");
+      })
+    );
+
+    dropArea.addEventListener("drop", e => {
+      handleFiles(e.dataTransfer.files);
     });
+
+    /* ---- 处理按钮（等待你接入算法） ---- */
+    document.getElementById("process-btn").addEventListener("click", () => {
+      alert("这里接入你的去水印算法即可。");
+    });
+
   </script>
 </body>
 </html>
