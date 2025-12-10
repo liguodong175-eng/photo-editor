@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>狗蛋去水印 · 纹理复制增强版 + 一键下载（500K压缩）</title>
+  <title>狗蛋去水印 · 文本水印增强版 + 一键下载</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -15,15 +15,15 @@
 <body class="bg-gray-100">
   <!-- 头部 -->
   <header class="bg-white border-b py-4 mb-4 text-center text-lg font-semibold">
-    狗蛋去水印 · 纹理复制增强版（输出控制在 500K 内）
+    狗蛋去水印 · 文本水印增强版（≤ 500KB）
   </header>
 
   <main class="max-w-6xl mx-auto px-4 pb-12">
     <!-- 说明 -->
     <section class="bg-white rounded-xl card-shadow p-5 mb-5 text-sm leading-relaxed space-y-1">
       <div>✅ 本地纯前端处理 · 不裁剪、不拉伸原图尺寸</div>
-      <div>✅ 按行纹理复制 + 边缘模糊，专注右下角水印区域</div>
-      <div>✅ 去水印后导出为 JPEG，自动压缩到 ≤ 500KB</div>
+      <div>✅ 针对右下角“豆包AI生成”：列方向取色 + 逐像素识别文字 + 轻度模糊</div>
+      <div>✅ 去水印后导出 JPEG，自动压缩到 ≤ 500KB</div>
       <div>✅ 支持批量上传 · 批量去水印 · 单张下载 · 一键下载全部</div>
     </section>
 
@@ -69,9 +69,7 @@
       </div>
 
       <!-- 预览区 -->
-      <div
-        class="bg-white rounded-xl p-5 card-shadow col-span-2 flex flex-col"
-      >
+      <div class="bg-white rounded-xl p-5 card-shadow col-span-2 flex flex-col">
         <h2 class="font-semibold mb-3">图片预览与下载</h2>
 
         <div
@@ -89,10 +87,8 @@
     </section>
   </main>
 
-  <footer
-    class="bg-white border-t py-3 text-center text-sm text-gray-400"
-  >
-    © 2025 狗蛋去水印 · 纹理复制增强版（500K压缩）
+  <footer class="bg-white border-t py-3 text-center text-sm text-gray-400">
+    © 2025 狗蛋去水印 · 文本水印增强版
   </footer>
 
   <script>
@@ -106,8 +102,8 @@
     const downloadAllBtn = document.getElementById("download-all-btn");
 
     const MAX_FILES = 20;
-    const MAX_SIZE = 5 * 1024 * 1024;     // 上传单图最大 5MB
-    const OUTPUT_MAX_BYTES = 500 * 1024;  // 导出目标：500KB 以内
+    const MAX_SIZE = 5 * 1024 * 1024;      // 上传单图最大 5MB
+    const OUTPUT_MAX_BYTES = 500 * 1024;   // 导出目标：500KB 以内
 
     /* ---------------- 工具函数 ---------------- */
 
@@ -138,12 +134,10 @@
     }
 
     function base64Size(dataUrl) {
-      // 粗略计算 base64 对应字节数
       const base64 = dataUrl.split(",")[1] || "";
       return Math.floor(base64.length * 3 / 4);
     }
 
-    // 把 canvas 压缩成 JPEG，并控制在 maxBytes 以内
     function canvasToCompressedJPEG(canvas, maxBytes = OUTPUT_MAX_BYTES) {
       let quality = 0.9;
       let dataUrl = canvas.toDataURL("image/jpeg", quality);
@@ -161,19 +155,23 @@
           .replace(/\.[^.]+$/, "")
           .replace(/[^\w\u4e00-\u9fa5-]+/g, "_") || "image";
       const idx = String(index).padStart(3, "0");
-      // 输出为 jpg
       return base + "_clean_" + idx + ".jpg";
     }
 
-    /* ---------------- 按行纹理复制 + 模糊 去水印算法 ----------------
-       调整点：
-       - 区域宽度 10%，高度 7%，更贴近底部小字区域；
-       - 仍然从上方逐行复制纹理，并在水印区域内轻度模糊边缘；
-       - 最后用 JPEG 压缩，控制在 500KB 以内。
+    /* ---------------- 文本水印增强去除算法 ----------------
+       核心：
+       - 在右下角候选区域内：
+           1）对其上方一条窄背景带，按列计算平均颜色（保留横向渐变）；
+           2）对候选区域逐像素，若亮度与该列背景差异 > 阈值，则视为水印像素；
+           3）仅覆盖这些像素，颜色取该列背景色的轻微扰动；
+           4）对整块区域轻度模糊柔和边缘。
+       - 最终用 JPEG 压缩输出，控制在 500KB 内。
     ---------------------------------------------------------------- */
 
-    const WM_W_RATIO = 0.10; // 右侧 10% 宽
-    const WM_H_RATIO = 0.07; // 底部 7% 高
+    const WM_W_RATIO = 0.18; // 候选区域：右侧 18% 宽
+    const WM_H_RATIO = 0.10; // 底部 10% 高
+    const BACK_STRIP_HEIGHT = 6;  // 上方背景采样带高度（像素）
+    const BRIGHTNESS_THRESHOLD = 18; // 亮度差阈值：越小越“严格”仅改文字
 
     async function smartRemoveWatermark(src) {
       const img = await loadImage(src);
@@ -182,54 +180,96 @@
 
       canvas.width = img.width;
       canvas.height = img.height;
-
       ctx.drawImage(img, 0, 0);
 
       const imgW = img.width;
       const imgH = img.height;
 
-      const regionW = imgW * WM_W_RATIO;
-      const regionH = imgH * WM_H_RATIO;
-      const padX = Math.max(6, imgW * 0.005);
-      const padY = Math.max(6, imgH * 0.005);
+      // 候选区域（包含水印文本）
+      const regionW = Math.floor(imgW * WM_W_RATIO);
+      const regionH = Math.floor(imgH * WM_H_RATIO);
+      const padX = Math.max(6, imgW * 0.01);
+      const padY = Math.max(6, imgH * 0.01);
 
-      // 右下角窄区域
-      const x = imgW - regionW - padX;
-      const y = imgH - regionH - padY;
+      const x = Math.floor(imgW - regionW - padX);
+      const y = Math.floor(imgH - regionH - padY);
 
-      // 多行纹理复制：从上方 regionH 高度范围内一点点往下拷贝
-      for (let row = 0; row < regionH; row++) {
-        let srcY = y - regionH + row - 2; // 上方一整块区域往下「拉」
-        if (srcY < 0) srcY = 0;
-        const line = ctx.getImageData(x, srcY, regionW, 1);
-
-        const alpha = row / regionH; // 越往下覆盖越多
-        ctx.globalAlpha = alpha * 0.9 + 0.1;
-
-        ctx.putImageData(line, x, y + row);
+      // 1. 在候选区域上方取一条窄背景带，按列计算平均颜色
+      const stripH = Math.min(BACK_STRIP_HEIGHT, y); // 防止越界
+      let bgColors = [];
+      if (stripH > 0) {
+        const stripData = ctx.getImageData(x, y - stripH, regionW, stripH).data;
+        for (let col = 0; col < regionW; col++) {
+          let rSum = 0, gSum = 0, bSum = 0, count = 0;
+          for (let row = 0; row < stripH; row++) {
+            const idx = (row * regionW + col) * 4;
+            const r = stripData[idx];
+            const g = stripData[idx + 1];
+            const b = stripData[idx + 2];
+            rSum += r;
+            gSum += g;
+            bSum += b;
+            count++;
+          }
+          if (count === 0) count = 1;
+          const rAvg = Math.round(rSum / count);
+          const gAvg = Math.round(gSum / count);
+          const bAvg = Math.round(bSum / count);
+          const brightness = 0.299 * rAvg + 0.587 * gAvg + 0.114 * bAvg;
+          bgColors[col] = { r: rAvg, g: gAvg, b: bAvg, brightness };
+        }
       }
-      ctx.globalAlpha = 1;
 
-      // 轻度模糊边缘，使过渡更自然
-      ctx.globalAlpha = 0.35;
-      ctx.filter = "blur(5px)";
+      // 2. 对候选区域逐像素，只修改亮度差异明显的“文字”像素
+      const regionImageData = ctx.getImageData(x, y, regionW, regionH);
+      const data = regionImageData.data;
+
+      for (let row = 0; row < regionH; row++) {
+        for (let col = 0; col < regionW; col++) {
+          const idx = (row * regionW + col) * 4;
+          const r = data[idx];
+          const g = data[idx + 1];
+          const b = data[idx + 2];
+
+          const pixelBrightness = 0.299 * r + 0.587 * g + 0.114 * b;
+          const bg = bgColors[col] || bgColors[Math.max(col - 1, 0)] || { r, g, b, brightness: pixelBrightness };
+          const diff = Math.abs(pixelBrightness - bg.brightness);
+
+          // 只改“明显偏亮或偏暗”的像素（文字）——背景则保持
+          if (diff > BRIGHTNESS_THRESHOLD) {
+            // 轻微引入纵向渐变感
+            const t = row / regionH;
+            data[idx]     = Math.round(bg.r * (0.9 + 0.1 * t));
+            data[idx + 1] = Math.round(bg.g * (0.9 + 0.1 * t));
+            data[idx + 2] = Math.round(bg.b * (0.9 + 0.1 * t));
+          }
+        }
+      }
+
+      ctx.putImageData(regionImageData, x, y);
+
+      // 3. 对整块区域轻度模糊柔化边缘
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.filter = "blur(2.5px)";
       ctx.drawImage(
         canvas,
-        x - 3,
-        y - 3,
-        regionW + 6,
-        regionH + 6,
+        x - 2,
+        y - 2,
+        regionW + 4,
+        regionH + 4,
         x,
         y,
         regionW,
         regionH
       );
+      ctx.restore();
+
       ctx.globalAlpha = 1;
       ctx.filter = "none";
 
-      // 关键：这里压缩为 JPEG，并控制在 500KB 内
-      const compressedDataUrl = canvasToCompressedJPEG(canvas, OUTPUT_MAX_BYTES);
-      return compressedDataUrl;
+      // 4. 最终输出：JPEG + 尺寸控制
+      return canvasToCompressedJPEG(canvas, OUTPUT_MAX_BYTES);
     }
 
     /* ---------------- UI：卡片生成 ---------------- */
