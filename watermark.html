@@ -2,33 +2,32 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>狗蛋去水印 · 文本水印增强版 + 一键下载</title>
+  <title>狗蛋去水印 · 强力模式 + 批量下载（≤500KB）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
   <script src="https://cdn.tailwindcss.com"></script>
-
   <style>
     .card-shadow { box-shadow: 0 4px 20px rgba(0,0,0,.08); }
   </style>
 </head>
 
 <body class="bg-gray-100">
-  <!-- 头部 -->
+  <!-- Header -->
   <header class="bg-white border-b py-4 mb-4 text-center text-lg font-semibold">
-    狗蛋去水印 · 文本水印增强版（≤ 500KB）
+    狗蛋去水印 · 强力模式（输出 ≤ 500KB）
   </header>
 
   <main class="max-w-6xl mx-auto px-4 pb-12">
-    <!-- 说明 -->
+    <!-- Info -->
     <section class="bg-white rounded-xl card-shadow p-5 mb-5 text-sm leading-relaxed space-y-1">
       <div>✅ 本地纯前端处理 · 不裁剪、不拉伸原图尺寸</div>
-      <div>✅ 针对右下角“豆包AI生成”：列方向取色 + 逐像素识别文字 + 轻度模糊</div>
-      <div>✅ 去水印后导出 JPEG，自动压缩到 ≤ 500KB</div>
-      <div>✅ 支持批量上传 · 批量去水印 · 单张下载 · 一键下载全部</div>
+      <div>✅ 强力去除优先：大块背景采样覆盖 + 按行纹理回灌 + 边缘柔化</div>
+      <div>✅ 专注右下角“豆包AI生成”区域（含不规则/渐变/半透明）</div>
+      <div>✅ 支持批量上传 · 一键去水印 · 单张下载 · 一键下载全部</div>
+      <div>✅ 导出 JPEG 自动压缩到 ≤ 500KB</div>
     </section>
 
     <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- 上传区 -->
+      <!-- Upload Panel -->
       <div class="bg-white rounded-xl p-5 card-shadow">
         <h2 class="font-semibold mb-2">上传图片</h2>
 
@@ -39,8 +38,9 @@
           <p class="mb-2">拖拽或点击上传</p>
 
           <button
-            class="bg-blue-600 text-white px-5 py-2 rounded"
             id="upload-btn"
+            class="bg-blue-600 text-white px-5 py-2 rounded"
+            type="button"
           >
             选择图片
           </button>
@@ -56,6 +56,7 @@
         <button
           id="process-btn"
           class="w-full mt-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
+          type="button"
         >
           一键去水印
         </button>
@@ -63,12 +64,13 @@
         <button
           id="download-all-btn"
           class="w-full mt-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded"
+          type="button"
         >
           ⬇ 一键下载全部
         </button>
       </div>
 
-      <!-- 预览区 -->
+      <!-- Preview Panel -->
       <div class="bg-white rounded-xl p-5 card-shadow col-span-2 flex flex-col">
         <h2 class="font-semibold mb-3">图片预览与下载</h2>
 
@@ -88,7 +90,7 @@
   </main>
 
   <footer class="bg-white border-t py-3 text-center text-sm text-gray-400">
-    © 2025 狗蛋去水印 · 文本水印增强版
+    © 2025 狗蛋去水印 · 强力模式
   </footer>
 
   <script>
@@ -102,21 +104,21 @@
     const downloadAllBtn = document.getElementById("download-all-btn");
 
     const MAX_FILES = 20;
-    const MAX_SIZE = 5 * 1024 * 1024;      // 上传单图最大 5MB
-    const OUTPUT_MAX_BYTES = 500 * 1024;   // 导出目标：500KB 以内
+    const MAX_SIZE = 5 * 1024 * 1024;
+    const OUTPUT_MAX_BYTES = 500 * 1024;
 
-    /* ---------------- 工具函数 ---------------- */
+    /* ---------------- 文件/图片工具 ---------------- */
 
     function readFile(file) {
-      return new Promise((resolve) => {
+      return new Promise(resolve => {
         const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
+        reader.onload = e => resolve(e.target.result);
         reader.readAsDataURL(file);
       });
     }
 
     function loadImage(src) {
-      return new Promise((resolve) => {
+      return new Promise(resolve => {
         const img = new Image();
         img.crossOrigin = "anonymous";
         img.onload = () => resolve(img);
@@ -141,7 +143,6 @@
     function canvasToCompressedJPEG(canvas, maxBytes = OUTPUT_MAX_BYTES) {
       let quality = 0.9;
       let dataUrl = canvas.toDataURL("image/jpeg", quality);
-
       while (base64Size(dataUrl) > maxBytes && quality > 0.2) {
         quality -= 0.1;
         dataUrl = canvas.toDataURL("image/jpeg", quality);
@@ -155,23 +156,21 @@
           .replace(/\.[^.]+$/, "")
           .replace(/[^\w\u4e00-\u9fa5-]+/g, "_") || "image";
       const idx = String(index).padStart(3, "0");
-      return base + "_clean_" + idx + ".jpg";
+      return `${base}_clean_${idx}.jpg`;
     }
 
-    /* ---------------- 文本水印增强去除算法 ----------------
-       核心：
-       - 在右下角候选区域内：
-           1）对其上方一条窄背景带，按列计算平均颜色（保留横向渐变）；
-           2）对候选区域逐像素，若亮度与该列背景差异 > 阈值，则视为水印像素；
-           3）仅覆盖这些像素，颜色取该列背景色的轻微扰动；
-           4）对整块区域轻度模糊柔和边缘。
-       - 最终用 JPEG 压缩输出，控制在 500KB 内。
-    ---------------------------------------------------------------- */
+    /* ---------------- 强力去水印算法 ----------------
+       目标：去除成功率优先
+       1) 定位右下角候选区（略大）
+       2) 取上方/左上方大块背景区域做“缩放覆盖”
+       3) 按行纹理回灌（弱覆盖）
+       4) 边缘轻度模糊
+       5) 输出 JPEG 并压缩 ≤ 500KB
+    ------------------------------------------------ */
 
-    const WM_W_RATIO = 0.18; // 候选区域：右侧 18% 宽
-    const WM_H_RATIO = 0.10; // 底部 10% 高
-    const BACK_STRIP_HEIGHT = 6;  // 上方背景采样带高度（像素）
-    const BRIGHTNESS_THRESHOLD = 18; // 亮度差阈值：越小越“严格”仅改文字
+    // 你可以视情况微调这两个值来“更强/更保守”
+    const WM_W_RATIO = 0.22; // 候选区宽：右侧 22%
+    const WM_H_RATIO = 0.12; // 候选区高：底部 12%
 
     async function smartRemoveWatermark(src) {
       const img = await loadImage(src);
@@ -182,102 +181,79 @@
       canvas.height = img.height;
       ctx.drawImage(img, 0, 0);
 
-      const imgW = img.width;
-      const imgH = img.height;
+      const W = img.width;
+      const H = img.height;
 
-      // 候选区域（包含水印文本）
-      const regionW = Math.floor(imgW * WM_W_RATIO);
-      const regionH = Math.floor(imgH * WM_H_RATIO);
-      const padX = Math.max(6, imgW * 0.01);
-      const padY = Math.max(6, imgH * 0.01);
+      const regionW = Math.floor(W * WM_W_RATIO);
+      const regionH = Math.floor(H * WM_H_RATIO);
+      const padX = Math.max(8, W * 0.01);
+      const padY = Math.max(8, H * 0.01);
 
-      const x = Math.floor(imgW - regionW - padX);
-      const y = Math.floor(imgH - regionH - padY);
+      const x = Math.floor(W - regionW - padX);
+      const y = Math.floor(H - regionH - padY);
 
-      // 1. 在候选区域上方取一条窄背景带，按列计算平均颜色
-      const stripH = Math.min(BACK_STRIP_HEIGHT, y); // 防止越界
-      let bgColors = [];
-      if (stripH > 0) {
-        const stripData = ctx.getImageData(x, y - stripH, regionW, stripH).data;
-        for (let col = 0; col < regionW; col++) {
-          let rSum = 0, gSum = 0, bSum = 0, count = 0;
-          for (let row = 0; row < stripH; row++) {
-            const idx = (row * regionW + col) * 4;
-            const r = stripData[idx];
-            const g = stripData[idx + 1];
-            const b = stripData[idx + 2];
-            rSum += r;
-            gSum += g;
-            bSum += b;
-            count++;
-          }
-          if (count === 0) count = 1;
-          const rAvg = Math.round(rSum / count);
-          const gAvg = Math.round(gSum / count);
-          const bAvg = Math.round(bSum / count);
-          const brightness = 0.299 * rAvg + 0.587 * gAvg + 0.114 * bAvg;
-          bgColors[col] = { r: rAvg, g: gAvg, b: bAvg, brightness };
-        }
-      }
+      // ① 强力背景采样块（尽量从上方和左上方取“干净块”）
+      const sampleW = Math.floor(regionW * 1.3);
+      const sampleH = Math.floor(regionH * 1.6);
 
-      // 2. 对候选区域逐像素，只修改亮度差异明显的“文字”像素
-      const regionImageData = ctx.getImageData(x, y, regionW, regionH);
-      const data = regionImageData.data;
+      let sx = Math.floor(x - regionW * 0.25);
+      let sy = Math.floor(y - sampleH - 6);
 
-      for (let row = 0; row < regionH; row++) {
-        for (let col = 0; col < regionW; col++) {
-          const idx = (row * regionW + col) * 4;
-          const r = data[idx];
-          const g = data[idx + 1];
-          const b = data[idx + 2];
+      // 边界修正
+      sx = Math.max(0, Math.min(sx, W - sampleW));
+      sy = Math.max(0, Math.min(sy, H - sampleH));
 
-          const pixelBrightness = 0.299 * r + 0.587 * g + 0.114 * b;
-          const bg = bgColors[col] || bgColors[Math.max(col - 1, 0)] || { r, g, b, brightness: pixelBrightness };
-          const diff = Math.abs(pixelBrightness - bg.brightness);
-
-          // 只改“明显偏亮或偏暗”的像素（文字）——背景则保持
-          if (diff > BRIGHTNESS_THRESHOLD) {
-            // 轻微引入纵向渐变感
-            const t = row / regionH;
-            data[idx]     = Math.round(bg.r * (0.9 + 0.1 * t));
-            data[idx + 1] = Math.round(bg.g * (0.9 + 0.1 * t));
-            data[idx + 2] = Math.round(bg.b * (0.9 + 0.1 * t));
-          }
-        }
-      }
-
-      ctx.putImageData(regionImageData, x, y);
-
-      // 3. 对整块区域轻度模糊柔化边缘
+      // 在候选区内裁剪并用采样块缩放覆盖
       ctx.save();
-      ctx.globalAlpha = 0.5;
-      ctx.filter = "blur(2.5px)";
+      ctx.beginPath();
+      ctx.rect(x, y, regionW, regionH);
+      ctx.clip();
       ctx.drawImage(
         canvas,
-        x - 2,
-        y - 2,
-        regionW + 4,
-        regionH + 4,
-        x,
-        y,
-        regionW,
-        regionH
+        sx, sy, sampleW, sampleH,
+        x,  y,  regionW, regionH
+      );
+      ctx.restore();
+
+      // ② 纹理回灌（按行从上方复制轻度覆盖，减少“缩放不自然”）
+      // 覆盖强度控制：越靠下稍微更强
+      for (let row = 0; row < regionH; row++) {
+        let srcY = y - regionH + row - 2;
+        if (srcY < 0) srcY = 0;
+
+        const line = ctx.getImageData(x, srcY, regionW, 1);
+        const t = row / regionH;
+
+        ctx.globalAlpha = 0.12 + 0.22 * t; // 轻度回灌
+        ctx.putImageData(line, x, y + row);
+      }
+      ctx.globalAlpha = 1;
+
+      // ③ 边缘柔化
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.filter = "blur(3.5px)";
+      ctx.drawImage(
+        canvas,
+        x - 3, y - 3,
+        regionW + 6, regionH + 6,
+        x, y,
+        regionW, regionH
       );
       ctx.restore();
 
       ctx.globalAlpha = 1;
       ctx.filter = "none";
 
-      // 4. 最终输出：JPEG + 尺寸控制
+      // ④ 输出压缩
       return canvasToCompressedJPEG(canvas, OUTPUT_MAX_BYTES);
     }
 
-    /* ---------------- UI：卡片生成 ---------------- */
+    /* ---------------- UI 渲染 ---------------- */
 
     function createCard(src, filename) {
       const card = document.createElement("div");
-      card.className =
-        "bg-gray-50 rounded-xl border p-3 flex flex-col";
+      card.className = "bg-gray-50 rounded-xl border p-3 flex flex-col";
       card.dataset.filename = filename || "image.png";
       card.dataset.done = "false";
 
@@ -286,6 +262,7 @@
           <img src="${src}" class="max-h-56 w-full object-contain bg-white rounded" />
           <button
             class="absolute top-2 right-2 bg-white/90 px-2 py-1 text-xs rounded shadow delete-btn"
+            type="button"
           >
             删除
           </button>
@@ -295,22 +272,20 @@
             <div class="text-xs truncate" title="${filename || "未命名图片"}">
               ${filename || "未命名图片"}
             </div>
-            <span
-              class="status text-[11px] bg-gray-200 rounded px-2 py-0.5 inline-block mt-1"
-            >
+            <span class="status text-[11px] bg-gray-200 rounded px-2 py-0.5 inline-block mt-1">
               待处理
             </span>
           </div>
           <button
             class="download-single mt-1 text-xs bg-blue-100 text-blue-500 py-1 rounded opacity-40 cursor-not-allowed"
+            type="button"
           >
             下载去水印图
           </button>
         </div>
       `;
 
-      const delBtn = card.querySelector(".delete-btn");
-      delBtn.onclick = () => {
+      card.querySelector(".delete-btn").onclick = () => {
         card.remove();
         updateState();
       };
@@ -334,7 +309,7 @@
       }
 
       const arr = Array.from(files).slice(0, remaining);
-      const oversize = arr.filter((f) => f.size > MAX_SIZE);
+      const oversize = arr.filter(f => f.size > MAX_SIZE);
       if (oversize.length) {
         alert("存在超过 5MB 的图片，已自动忽略大文件。");
       }
@@ -344,13 +319,12 @@
         const src = await readFile(file);
         previewGrid.appendChild(createCard(src, file.name));
       }
-      updateState();
 
-      // 重置 input 的值，避免下次选同一批文件不触发 change
+      updateState();
       fileInput.value = "";
     }
 
-    /* ---------------- 处理逻辑封装 ---------------- */
+    /* ---------------- 处理逻辑 ---------------- */
 
     async function processCard(card) {
       if (card.dataset.done === "true") return;
@@ -361,7 +335,7 @@
 
       status.textContent = "处理中...";
       status.className =
-        "status text-[11px] bg-amber-100 text-amber-700 rounded px-2 py-0.5 inline-block";
+        "status text-[11px] bg-amber-100 text-amber-700 rounded px-2 py-0.5 inline-block mt-1";
 
       try {
         const newSrc = await smartRemoveWatermark(img.src);
@@ -370,21 +344,20 @@
 
         status.textContent = "已去水印";
         status.className =
-          "status text-[11px] bg-emerald-100 text-emerald-700 rounded px-2 py-0.5 inline-block";
+          "status text-[11px] bg-emerald-100 text-emerald-700 rounded px-2 py-0.5 inline-block mt-1";
 
         dlBtn.classList.remove("opacity-40", "cursor-not-allowed");
         dlBtn.classList.add("bg-blue-500", "text-white");
         dlBtn.textContent = "下载去水印图";
 
-        const index =
-          Array.from(previewGrid.children).indexOf(card) + 1 || 1;
+        const index = Array.from(previewGrid.children).indexOf(card) + 1;
         const filename = safeFilename(card.dataset.filename, index);
         dlBtn.onclick = () => download(img.src, filename);
       } catch (e) {
         console.error(e);
         status.textContent = "处理失败";
         status.className =
-          "status text-[11px] bg-red-100 text-red-600 rounded px-2 py-0.5 inline-block";
+          "status text-[11px] bg-red-100 text-red-600 rounded px-2 py-0.5 inline-block mt-1";
       }
     }
 
@@ -395,15 +368,13 @@
       }
     }
 
-    /* ---------------- 交互事件 ---------------- */
+    /* ---------------- 事件绑定（修复需点两次的问题） ---------------- */
 
-    // 选择按钮：阻止冒泡，避免触发两次
     uploadBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       fileInput.click();
     });
 
-    // 点击整个拖拽区域也可以选择文件（但排除按钮本身）
     dropArea.addEventListener("click", (e) => {
       if (e.target === uploadBtn || uploadBtn.contains(e.target)) return;
       fileInput.click();
@@ -411,31 +382,26 @@
 
     fileInput.addEventListener("change", () => handleFiles(fileInput.files));
 
-    dropArea.addEventListener("dragover", (e) => {
-      e.preventDefault();
-    });
+    dropArea.addEventListener("dragover", (e) => e.preventDefault());
     dropArea.addEventListener("drop", (e) => {
       e.preventDefault();
       handleFiles(e.dataTransfer.files);
     });
 
-    // 一键去水印
     processBtn.onclick = async () => {
       const cards = Array.from(previewGrid.children);
       if (!cards.length) {
         alert("请先上传图片");
         return;
       }
+
       processBtn.disabled = true;
       processBtn.textContent = "处理中...";
-
       await ensureAllProcessed();
-
       processBtn.disabled = false;
       processBtn.textContent = "一键去水印";
     };
 
-    // 一键下载全部
     downloadAllBtn.onclick = async () => {
       const cards = Array.from(previewGrid.children);
       if (!cards.length) {
@@ -445,7 +411,6 @@
 
       downloadAllBtn.disabled = true;
       downloadAllBtn.textContent = "处理中并准备下载...";
-
       await ensureAllProcessed();
 
       cards.forEach((card, idx) => {
