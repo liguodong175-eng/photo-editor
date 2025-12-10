@@ -1,254 +1,407 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<title>狗蛋去水印 · 增强修复 + 一键下载</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>狗蛋去水印 · 增强修复 + 一键下载</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
 
-<style>
-.card-shadow{box-shadow:0 4px 20px rgba(0,0,0,.08)}
-</style>
+  <style>
+    .card-shadow {
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+  </style>
 </head>
 
 <body class="bg-gray-100">
+  <!-- 头部 -->
+  <header class="bg-white border-b py-4 mb-4 text-center text-lg font-semibold">
+    狗蛋去水印 · 智能背景修复增强版
+  </header>
 
-<header class="bg-white border-b py-4 mb-4 text-center text-lg font-semibold">
-狗蛋去水印 · 智能背景修复增强版
-</header>
+  <main class="max-w-6xl mx-auto px-4 pb-12">
+    <!-- 说明 -->
+    <section class="bg-white rounded-xl card-shadow p-5 mb-5 text-sm leading-relaxed space-y-1">
+      <div>✅ 本地纯前端处理 · 不裁剪、不拉伸、不压缩原图</div>
+      <div>✅ 大块背景采样 + 多行复制渐变 + 边缘柔化，适配复杂场景</div>
+      <div>✅ 支持批量上传 · 批量去水印 · 一键下载全部</div>
+    </section>
 
-<main class="max-w-6xl mx-auto px-4 pb-12">
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- 上传区 -->
+      <div class="bg-white rounded-xl p-5 card-shadow">
+        <h2 class="font-semibold mb-2">上传图片</h2>
 
-<section class="bg-white rounded-xl card-shadow p-5 mb-5 text-sm leading-relaxed space-y-1">
-<div>✅ 本地纯前端处理 · 不裁剪、不拉伸、不压缩</div>
-<div>✅ 多行复制 + 渐变融合 + 边缘柔化修复</div>
-<div>✅ 批量去水印 + 一键批量下载</div>
-</section>
+        <div
+          id="drop-area"
+          class="border border-dashed border-gray-300 rounded-lg py-10 text-center cursor-pointer hover:bg-gray-50"
+        >
+          <p class="mb-2">拖拽或点击上传</p>
 
-<section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <button
+            class="bg-blue-600 text-white px-5 py-2 rounded"
+            id="upload-btn"
+          >
+            选择图片
+          </button>
 
-<!-- Upload -->
-<div class="bg-white rounded-xl p-5 card-shadow">
-<h2 class="font-semibold mb-2">上传图片</h2>
+          <input id="file-input" type="file" multiple accept="image/*" hidden />
+          <p class="text-xs mt-2 text-gray-400">(单张 ≤ 5MB，最多 20 张)</p>
+        </div>
 
-<div id="drop-area"
-class="border border-dashed border-gray-300 rounded-lg py-10 text-center cursor-pointer hover:bg-gray-50">
+        <p class="mt-3 text-sm">
+          已选择：<span id="file-count" class="font-semibold">0</span> 张
+        </p>
 
-<p class="mb-2">拖拽或点击上传</p>
+        <button
+          id="process-btn"
+          class="w-full mt-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
+        >
+          一键去水印
+        </button>
 
-<button class="bg-blue-600 text-white px-5 py-2 rounded" id="upload-btn">
-选择图片
-</button>
+        <button
+          id="download-all-btn"
+          class="w-full mt-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded"
+        >
+          ⬇ 一键下载全部
+        </button>
+      </div>
 
-<input id="file-input" type="file" multiple accept="image/*" hidden>
-<p class="text-xs mt-2 text-gray-400">(单张≤5MB，最多20张)</p>
-</div>
+      <!-- 预览区 -->
+      <div
+        class="bg-white rounded-xl p-5 card-shadow col-span-2 flex flex-col"
+      >
+        <h2 class="font-semibold mb-3">图片预览与下载</h2>
 
-<p class="mt-3 text-sm">已选择：
-<span id="file-count" class="font-semibold">0</span> 张</p>
+        <div
+          id="empty-hint"
+          class="flex-1 flex items-center justify-center text-gray-400"
+        >
+          暂无图片，请先上传。
+        </div>
 
-<button id="process-btn"
-class="w-full mt-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">
-一键去水印
-</button>
+        <div
+          id="preview-container"
+          class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+        ></div>
+      </div>
+    </section>
+  </main>
 
-<button id="download-all-btn"
-class="w-full mt-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded">
-⬇ 一键下载全部
-</button>
-</div>
+  <footer
+    class="bg-white border-t py-3 text-center text-sm text-gray-400"
+  >
+    © 2025 狗蛋去水印 · 增强修复 + 一键下载
+  </footer>
 
-<!-- Preview -->
-<div class="bg-white rounded-xl p-5 card-shadow col-span-2 flex flex-col">
-<h2 class="font-semibold mb-3">图片预览</h2>
+  <script>
+    const uploadBtn = document.getElementById("upload-btn");
+    const fileInput = document.getElementById("file-input");
+    const dropArea = document.getElementById("drop-area");
+    const previewGrid = document.getElementById("preview-container");
+    const emptyHint = document.getElementById("empty-hint");
+    const fileCount = document.getElementById("file-count");
+    const processBtn = document.getElementById("process-btn");
+    const downloadAllBtn = document.getElementById("download-all-btn");
 
-<div id="empty-hint" class="flex-1 flex items-center justify-center text-gray-400">
-暂无图片
-</div>
+    const MAX_FILES = 20;
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
-<div id="preview-container"
-class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    /* ---------------- 工具函数 ---------------- */
 
-</div>
-
-</section>
-
-</main>
-
-<footer class="bg-white border-t py-3 text-center text-sm text-gray-400">
-© 2025 狗蛋去水印 · 支持批处理下载
-</footer>
-
-<script>
-
-const uploadBtn=document.getElementById('upload-btn');
-const fileInput=document.getElementById('file-input');
-const dropArea=document.getElementById('drop-area');
-const preview=document.getElementById('preview-container');
-const hint=document.getElementById('empty-hint');
-const countEl=document.getElementById('file-count');
-
-const processBtn=document.getElementById('process-btn');
-const downloadAllBtn=document.getElementById('download-all-btn');
-
-const MAX_FILES=20;
-
-// ------------ 工具 --------------
-
-function readFile(f){
-    return new Promise(res=>{
-        let r=new FileReader;
-        r.onload=e=>res(e.target.result);
-        r.readAsDataURL(f);
-    })
-}
-
-function loadImage(src){
-    return new Promise(res=>{
-        let i=new Image();
-        i.crossOrigin="anonymous";
-        i.onload=()=>res(i);
-        i.src=src;
-    })
-}
-
-function download(src,name){
-    let a=document.createElement('a');
-    a.href=src;
-    a.download=name;
-    a.click();
-}
-
-// ------------ 水印增强算法 ------------
-
-async function enhancedRemove(src){
-
-    const img=await loadImage(src);
-    const c=document.createElement('canvas');
-    const ctx=c.getContext('2d');
-
-    c.width=img.width;
-    c.height=img.height;
-
-    ctx.drawImage(img,0,0);
-
-    const w = img.width*0.18;
-    const h = img.height*0.1;
-    const x = img.width - w - 10;
-    const y = img.height - h - 8;
-
-    // 多行复制 + 渐变
-    for(let row=0;row<h;row++){
-        let sy=Math.max(0,y-row-2);
-        let line=ctx.getImageData(x,sy,w,1);
-
-        ctx.globalAlpha = row/h * .9 + .1;
-        ctx.putImageData(line,x,y+row);
+    function readFile(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsDataURL(file);
+      });
     }
 
-    // 柔化边缘
-    ctx.globalAlpha=.35;
-    ctx.filter='blur(6px)';
-    ctx.drawImage(c,x,y,w,h,x,y,w,h);
-
-    ctx.globalAlpha=1;
-    ctx.filter='none';
-
-    return c.toDataURL("image/png");
-}
-
-// ------------ UI --------------
-
-function card(src,name){
-    const d=document.createElement("div");
-    d.className="bg-gray-50 rounded-xl border p-3";
-    d.dataset.name=name;
-    d.dataset.done="false";
-
-    d.innerHTML=`
-    <img src="${src}" class="h-48 mx-auto object-contain bg-white rounded mb-2">
-    <div class="text-xs truncate mb-2">${name}</div>
-    <div class="status text-xs bg-gray-200 rounded px-2 py-1 inline-block">待处理</div>
-    <button class="dl mt-2 w-full text-xs bg-blue-100 py-1 rounded opacity-40 cursor-not-allowed">下载</button>
-    `;
-    return d;
-}
-
-async function upload(files){
-    let arr=[...files].slice(0,MAX_FILES-preview.children.length);
-
-    for(let f of arr){
-        preview.appendChild(card(await readFile(f),f.name));
+    function loadImage(src) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(img);
+        img.src = src;
+      });
     }
 
-    state();
-}
-
-function state(){
-    let n=preview.children.length;
-    countEl.textContent=n;
-    hint.classList.toggle("hidden",n>0);
-    preview.classList.toggle("hidden",n===0);
-}
-
-// ------------ Events ------------
-
-uploadBtn.onclick=()=>fileInput.click();
-fileInput.onchange=()=>upload(fileInput.files);
-
-dropArea.onclick=()=>fileInput.click();
-dropArea.ondragover=e=>e.preventDefault();
-dropArea.ondrop=e=>{
-    e.preventDefault();
-    upload(e.dataTransfer.files);
-};
-
-processBtn.onclick=async()=>{
-    let items=[...preview.children];
-    if(!items.length){ alert("请先上传图片"); return;}
-
-    processBtn.disabled=true;
-    processBtn.textContent="处理中...";
-
-    for(let i of items){
-        if(i.dataset.done==="true") continue;
-
-        const img=i.querySelector("img");
-        const st=i.querySelector(".status");
-        const dl=i.querySelector(".dl");
-
-        st.textContent="处理中...";
-        st.className="status bg-yellow-100 px-2 py-1 text-xs rounded inline-block";
-
-        img.src = await enhancedRemove(img.src);
-
-        i.dataset.done="true";
-        st.textContent="已完成";
-        st.className="status bg-green-100 px-2 py-1 text-xs rounded inline-block";
-
-        dl.classList.remove("opacity-40","cursor-not-allowed");
-        dl.textContent="下载";
-        dl.onclick=()=>download(img.src,`clean_${Date.now()}.png`);
+    function download(src, filename) {
+      const a = document.createElement("a");
+      a.href = src;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
 
-    processBtn.disabled=false;
-    processBtn.textContent="一键去水印";
-};
+    function safeFilename(name, index) {
+      const base =
+        (name || "image")
+          .replace(/\.[^.]+$/, "")
+          .replace(/[^\w\u4e00-\u9fa5-]+/g, "_") || "image";
+      const idx = String(index).padStart(3, "0");
+      return base + "_clean_" + idx + ".png";
+    }
 
-downloadAllBtn.onclick= async ()=>{
-    let items=[...preview.children];
+    /* ---------------- 增强去水印算法 ----------------
+       思路：
+       1. 在水印上方 + 左侧取一块较大的「干净区域」作为采样源。
+       2. 使用 drawImage 将采样块整体缩放覆盖到水印区域（保证纹理/色调接近）。
+       3. 再按行从上往下叠加少量像素做渐变，增强过渡。
+       4. 最后在水印区域边缘做模糊柔化，减少边界感。
+    ------------------------------------------------ */
 
-    if(!items.length){ alert("还未上传图片"); return;}
+    async function smartRemoveWatermark(src) {
+      const img = await loadImage(src);
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
 
-    await processBtn.onclick();
+      canvas.width = img.width;
+      canvas.height = img.height;
 
-    items.forEach((i,idx)=>{
-        let img=i.querySelector("img");
-        download(img.src,`clean_${String(idx+1).padStart(3,"0")}.png`);
-    });
-}
+      ctx.drawImage(img, 0, 0);
 
-</script>
+      // 水印大致区域（右下角）
+      const regionW = img.width * 0.18;
+      const regionH = img.height * 0.1;
+      const padX = Math.max(8, img.width * 0.01);
+      const padY = Math.max(8, img.height * 0.01);
+
+      const x = img.width - regionW - padX;
+      const y = img.height - regionH - padY;
+
+      // ① 大块采样区域：从上方 + 左侧略偏一点，避开底部文字
+      const sampleW = regionW * 1.4;
+      const sampleH = regionH * 1.6;
+      let sx = x - regionW * 0.3;
+      let sy = y - sampleH - 5;
+
+      if (sx < 0) sx = 0;
+      if (sy < 0) sy = 0;
+      if (sx + sampleW > img.width) sx = img.width - sampleW;
+      if (sy + sampleH > img.height) sy = img.height - sampleH;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, y, regionW, regionH);
+      ctx.clip();
+      ctx.drawImage(
+        canvas,
+        sx,
+        sy,
+        sampleW,
+        sampleH,
+        x,
+        y,
+        regionW,
+        regionH
+      );
+      ctx.restore();
+
+      // ② 多行渐变叠加：从上方逐行复制轻微覆盖，减弱采样区域拉伸感
+      for (let row = 0; row < regionH; row++) {
+        let srcY = Math.max(0, y - regionH + row - 2);
+        const line = ctx.getImageData(x, srcY, regionW, 1);
+        const alpha = row / regionH; // 越往下覆盖越多
+        ctx.globalAlpha = alpha * 0.4; // 小幅叠加
+        ctx.putImageData(line, x, y + row);
+      }
+      ctx.globalAlpha = 1;
+
+      // ③ 边缘柔化：仅在水印区域周围做小范围模糊
+      ctx.globalAlpha = 0.45;
+      ctx.filter = "blur(4px)";
+      ctx.drawImage(
+        canvas,
+        x - 3,
+        y - 3,
+        regionW + 6,
+        regionH + 6,
+        x,
+        y,
+        regionW,
+        regionH
+      );
+      ctx.globalAlpha = 1;
+      ctx.filter = "none";
+
+      return canvas.toDataURL("image/png");
+    }
+
+    /* ---------------- UI：卡片生成 ---------------- */
+
+    function createCard(src, filename) {
+      const card = document.createElement("div");
+      card.className = "bg-gray-50 rounded-xl border p-3 flex flex-col";
+      card.dataset.filename = filename || "image.png";
+      card.dataset.done = "false";
+
+      card.innerHTML = `
+        <div class="relative mb-2">
+          <!-- 重要：object-contain + max-h，保证不裁剪图片 -->
+          <img src="${src}" class="max-h-56 w-full object-contain bg-white rounded" />
+          <button
+            class="absolute top-2 right-2 bg-white/90 px-2 py-1 text-xs rounded shadow delete-btn"
+          >
+            删除
+          </button>
+        </div>
+        <div class="flex-1 flex flex-col justify-between">
+          <div class="mb-2">
+            <div class="text-xs truncate" title="${filename || "未命名图片"}">
+              ${filename || "未命名图片"}
+            </div>
+            <span
+              class="status text-[11px] bg-gray-200 rounded px-2 py-0.5 inline-block mt-1"
+            >
+              待处理
+            </span>
+          </div>
+          <button
+            class="download-single mt-1 text-xs bg-blue-100 text-blue-500 py-1 rounded opacity-40 cursor-not-allowed"
+          >
+            下载去水印图
+          </button>
+        </div>
+      `;
+
+      const delBtn = card.querySelector(".delete-btn");
+      delBtn.onclick = () => {
+        card.remove();
+        updateState();
+      };
+
+      return card;
+    }
+
+    function updateState() {
+      const count = previewGrid.children.length;
+      fileCount.textContent = count;
+      emptyHint.classList.toggle("hidden", count > 0);
+      previewGrid.classList.toggle("hidden", count === 0);
+    }
+
+    async function handleFiles(files) {
+      const current = previewGrid.children.length;
+      const remaining = MAX_FILES - current;
+      if (remaining <= 0) {
+        alert(`最多支持 ${MAX_FILES} 张图片`);
+        return;
+      }
+
+      const arr = Array.from(files).slice(0, remaining);
+      const oversize = arr.filter((f) => f.size > MAX_SIZE);
+      if (oversize.length) {
+        alert("存在超过 5MB 的图片，已自动忽略大文件。");
+      }
+
+      for (const file of arr) {
+        if (file.size > MAX_SIZE) continue;
+        const src = await readFile(file);
+        previewGrid.appendChild(createCard(src, file.name));
+      }
+      updateState();
+    }
+
+    /* ---------------- 处理逻辑封装：确保全部已处理 ---------------- */
+
+    async function processCard(card) {
+      if (card.dataset.done === "true") return;
+
+      const img = card.querySelector("img");
+      const status = card.querySelector(".status");
+      const dlBtn = card.querySelector(".download-single");
+
+      status.textContent = "处理中...";
+      status.className =
+        "status text-[11px] bg-amber-100 text-amber-700 rounded px-2 py-0.5 inline-block";
+
+      try {
+        const newSrc = await smartRemoveWatermark(img.src);
+        img.src = newSrc;
+        card.dataset.done = "true";
+
+        status.textContent = "已去水印";
+        status.className =
+          "status text-[11px] bg-emerald-100 text-emerald-700 rounded px-2 py-0.5 inline-block";
+
+        dlBtn.classList.remove("opacity-40", "cursor-not-allowed");
+        dlBtn.classList.add("bg-blue-500", "text-white");
+        dlBtn.textContent = "下载去水印图";
+
+        const index =
+          Array.from(previewGrid.children).indexOf(card) + 1 || 1;
+        const filename = safeFilename(card.dataset.filename, index);
+        dlBtn.onclick = () => download(img.src, filename);
+      } catch (e) {
+        console.error(e);
+        status.textContent = "处理失败";
+        status.className =
+          "status text-[11px] bg-red-100 text-red-600 rounded px-2 py-0.5 inline-block";
+      }
+    }
+
+    async function ensureAllProcessed() {
+      const cards = Array.from(previewGrid.children);
+      for (const card of cards) {
+        await processCard(card);
+      }
+    }
+
+    /* ---------------- 交互事件 ---------------- */
+
+    uploadBtn.onclick = () => fileInput.click();
+    fileInput.onchange = () => handleFiles(fileInput.files);
+
+    dropArea.onclick = () => fileInput.click();
+    dropArea.ondragover = (e) => e.preventDefault();
+    dropArea.ondrop = (e) => {
+      e.preventDefault();
+      handleFiles(e.dataTransfer.files);
+    };
+
+    // 一键去水印
+    processBtn.onclick = async () => {
+      const cards = Array.from(previewGrid.children);
+      if (!cards.length) {
+        alert("请先上传图片");
+        return;
+      }
+      processBtn.disabled = true;
+      processBtn.textContent = "处理中...";
+
+      await ensureAllProcessed();
+
+      processBtn.disabled = false;
+      processBtn.textContent = "一键去水印";
+    };
+
+    // 一键下载全部：自动确保已处理，再依次下载
+    downloadAllBtn.onclick = async () => {
+      const cards = Array.from(previewGrid.children);
+      if (!cards.length) {
+        alert("请先上传图片");
+        return;
+      }
+
+      // 先确保全部去水印
+      downloadAllBtn.disabled = true;
+      downloadAllBtn.textContent = "处理中并准备下载...";
+      await ensureAllProcessed();
+
+      // 全部下载
+      cards.forEach((card, idx) => {
+        const img = card.querySelector("img");
+        const filename = safeFilename(card.dataset.filename, idx + 1);
+        download(img.src, filename);
+      });
+
+      downloadAllBtn.disabled = false;
+      downloadAllBtn.textContent = "⬇ 一键下载全部";
+    };
+  </script>
 </body>
 </html>
