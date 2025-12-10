@@ -8,9 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    .card-shadow {
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    }
+    .card-shadow { box-shadow: 0 4px 20px rgba(0,0,0,.08); }
   </style>
 </head>
 
@@ -24,7 +22,7 @@
     <!-- 说明 -->
     <section class="bg-white rounded-xl card-shadow p-5 mb-5 text-sm leading-relaxed space-y-1">
       <div>✅ 本地纯前端处理 · 不裁剪、不拉伸、不压缩原图</div>
-      <div>✅ 大块背景采样 + 多行复制渐变 + 边缘柔化，适配复杂场景</div>
+      <div>✅ 针对豆包右下角水印：窄区域覆盖 + 上方采样 + 渐变叠加 + 边缘柔化</div>
       <div>✅ 支持批量上传 · 批量去水印 · 一键下载全部</div>
     </section>
 
@@ -38,14 +36,9 @@
           class="border border-dashed border-gray-300 rounded-lg py-10 text-center cursor-pointer hover:bg-gray-50"
         >
           <p class="mb-2">拖拽或点击上传</p>
-
-          <button
-            class="bg-blue-600 text-white px-5 py-2 rounded"
-            id="upload-btn"
-          >
+          <button id="upload-btn" class="bg-blue-600 text-white px-5 py-2 rounded">
             选择图片
           </button>
-
           <input id="file-input" type="file" multiple accept="image/*" hidden />
           <p class="text-xs mt-2 text-gray-400">(单张 ≤ 5MB，最多 20 张)</p>
         </div>
@@ -70,9 +63,7 @@
       </div>
 
       <!-- 预览区 -->
-      <div
-        class="bg-white rounded-xl p-5 card-shadow col-span-2 flex flex-col"
-      >
+      <div class="bg-white rounded-xl p-5 card-shadow col-span-2 flex flex-col">
         <h2 class="font-semibold mb-3">图片预览与下载</h2>
 
         <div
@@ -90,9 +81,7 @@
     </section>
   </main>
 
-  <footer
-    class="bg-white border-t py-3 text-center text-sm text-gray-400"
-  >
+  <footer class="bg-white border-t py-3 text-center text-sm text-gray-400">
     © 2025 狗蛋去水印 · 增强修复 + 一键下载
   </footer>
 
@@ -146,13 +135,14 @@
       return base + "_clean_" + idx + ".png";
     }
 
-    /* ---------------- 增强去水印算法 ----------------
-       思路：
-       1. 在水印上方 + 左侧取一块较大的「干净区域」作为采样源。
-       2. 使用 drawImage 将采样块整体缩放覆盖到水印区域（保证纹理/色调接近）。
-       3. 再按行从上往下叠加少量像素做渐变，增强过渡。
-       4. 最后在水印区域边缘做模糊柔化，减少边界感。
-    ------------------------------------------------ */
+    /* ---------------- 针对豆包水印的增强去水印算法 ----------------
+       关键参数（可根据你后续图片微调）：
+       - WM_W_RATIO: 水印区域占整图宽度的比例（越小越不容易伤到左侧大字）
+       - WM_H_RATIO: 水印区域占整图高度的比例
+    ---------------------------------------------------------------- */
+
+    const WM_W_RATIO = 0.12; // 只处理右侧约 12% 宽，避免破坏“ing”等大字
+    const WM_H_RATIO = 0.08; // 高度略小一点，刚好覆盖“豆包AI生成”
 
     async function smartRemoveWatermark(src) {
       const img = await loadImage(src);
@@ -164,62 +154,51 @@
 
       ctx.drawImage(img, 0, 0);
 
-      // 水印大致区域（右下角）
-      const regionW = img.width * 0.18;
-      const regionH = img.height * 0.1;
-      const padX = Math.max(8, img.width * 0.01);
-      const padY = Math.max(8, img.height * 0.01);
+      // 水印大致区域（右下角窄条）
+      const regionW = img.width * WM_W_RATIO;
+      const regionH = img.height * WM_H_RATIO;
+      const padX = Math.max(6, img.width * 0.005);  // 离右边、底边稍微留一点空隙
+      const padY = Math.max(6, img.height * 0.005);
 
       const x = img.width - regionW - padX;
       const y = img.height - regionH - padY;
 
-      // ① 大块采样区域：从上方 + 左侧略偏一点，避开底部文字
-      const sampleW = regionW * 1.4;
+      // ① 上方采样区域：同宽，高度更大一些，只取上方「干净背景」
+      const sampleW = regionW;
       const sampleH = regionH * 1.6;
-      let sx = x - regionW * 0.3;
-      let sy = y - sampleH - 5;
 
-      if (sx < 0) sx = 0;
+      let sx = x;
+      let sy = y - sampleH - 4;
       if (sy < 0) sy = 0;
-      if (sx + sampleW > img.width) sx = img.width - sampleW;
       if (sy + sampleH > img.height) sy = img.height - sampleH;
 
+      // 先把这块上方区域整体拉伸填充到水印区域
       ctx.save();
       ctx.beginPath();
       ctx.rect(x, y, regionW, regionH);
       ctx.clip();
-      ctx.drawImage(
-        canvas,
-        sx,
-        sy,
-        sampleW,
-        sampleH,
-        x,
-        y,
-        regionW,
-        regionH
-      );
+      ctx.drawImage(canvas, sx, sy, sampleW, sampleH, x, y, regionW, regionH);
       ctx.restore();
 
-      // ② 多行渐变叠加：从上方逐行复制轻微覆盖，减弱采样区域拉伸感
+      // ② 多行渐变叠加：从更靠上的区域逐行复制降低拉伸感
       for (let row = 0; row < regionH; row++) {
-        let srcY = Math.max(0, y - regionH + row - 2);
+        const srcY = Math.max(0, y - regionH + row - 2);
         const line = ctx.getImageData(x, srcY, regionW, 1);
         const alpha = row / regionH; // 越往下覆盖越多
-        ctx.globalAlpha = alpha * 0.4; // 小幅叠加
+        ctx.globalAlpha = alpha * 0.45; // 小幅叠加
         ctx.putImageData(line, x, y + row);
       }
       ctx.globalAlpha = 1;
 
-      // ③ 边缘柔化：仅在水印区域周围做小范围模糊
+      // ③ 边缘柔化：仅在水印区域边缘做轻度模糊
       ctx.globalAlpha = 0.45;
-      ctx.filter = "blur(4px)";
+      ctx.filter = "blur(3px)";
       ctx.drawImage(
         canvas,
-        x - 3,
-        y - 3,
-        regionW + 6,
-        regionH + 6,
+        x - 2,
+        y - 2,
+        regionW + 4,
+        regionH + 4,
         x,
         y,
         regionW,
@@ -235,7 +214,8 @@
 
     function createCard(src, filename) {
       const card = document.createElement("div");
-      card.className = "bg-gray-50 rounded-xl border p-3 flex flex-col";
+      card.className =
+        "bg-gray-50 rounded-xl border p-3 flex flex-col";
       card.dataset.filename = filename || "image.png";
       card.dataset.done = "false";
 
@@ -306,7 +286,7 @@
       updateState();
     }
 
-    /* ---------------- 处理逻辑封装：确保全部已处理 ---------------- */
+    /* ---------------- 处理逻辑封装 ---------------- */
 
     async function processCard(card) {
       if (card.dataset.done === "true") return;
@@ -379,7 +359,7 @@
       processBtn.textContent = "一键去水印";
     };
 
-    // 一键下载全部：自动确保已处理，再依次下载
+    // 一键下载全部：自动先处理，再顺序下载
     downloadAllBtn.onclick = async () => {
       const cards = Array.from(previewGrid.children);
       if (!cards.length) {
@@ -387,12 +367,11 @@
         return;
       }
 
-      // 先确保全部去水印
       downloadAllBtn.disabled = true;
       downloadAllBtn.textContent = "处理中并准备下载...";
+
       await ensureAllProcessed();
 
-      // 全部下载
       cards.forEach((card, idx) => {
         const img = card.querySelector("img");
         const filename = safeFilename(card.dataset.filename, idx + 1);
