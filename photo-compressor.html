@@ -476,7 +476,6 @@
             // 获取当前hash路径（如 #/pdf-compress → /pdf-compress）
             const hash = window.location.hash || '#/';
             currentPath = hash.slice(1); // 去掉 # 符号
-            console.log('当前路径:', currentPath); // 调试用，可删除
             
             // 1. 隐藏所有路由页面
             routePages.forEach(page => {
@@ -507,9 +506,6 @@
             const targetPage = document.getElementById(targetPageId);
             if (targetPage) {
                 targetPage.classList.remove('hidden');
-                console.log('显示页面:', targetPageId); // 调试用，可删除
-            } else {
-                console.error('未找到页面:', targetPageId); // 调试用，可删除
             }
             
             // 3. 更新导航高亮（当前路径对应的导航项高亮）
@@ -520,7 +516,10 @@
         function navigateTo(path) {
             window.location.hash = path;
             // 关闭移动端菜单
-            document.getElementById('mobile-menu').classList.add('hidden');
+            const mobileMenu = document.getElementById('mobile-menu');
+            if (mobileMenu) {
+                mobileMenu.classList.add('hidden');
+            }
         }
         
         // 更新导航高亮
@@ -566,7 +565,7 @@
             
             fileInput.addEventListener('change', function(e) {
                 const files = e.target.files;
-                if (!files.length) return;
+                if (!files || !files.length) return;
                 
                 // 显示文件列表
                 fileList.classList.remove('hidden');
@@ -574,7 +573,7 @@
                 
                 // 计算总大小
                 let totalSize = 0;
-                files.forEach(file => {
+                Array.from(files).forEach(file => {
                     totalSize += file.size;
                     // 添加文件项
                     const fileItem = document.createElement('div');
@@ -594,47 +593,48 @@
             });
         }
         
-        // 通用处理按钮绑定
+        // 通用处理按钮绑定（修复变量名冲突）
         function bindProcessBtn(type) {
             const processBtn = document.getElementById(`${type}-process-btn`);
             const fileList = document.getElementById(`${type}-file-list`);
-            const progress = document.getElementById(`${type}-progress`);
+            const progressContainer = document.getElementById(`${type}-progress`);
             const progressBar = document.getElementById(`${type}-progress-bar`);
             const progressText = document.getElementById(`${type}-progress-text`);
             const result = document.getElementById(`${type}-result`);
             const originalSizeEl = document.getElementById(`${type}-original-size`);
             const compressedSizeEl = document.getElementById(`${type}-compressed-size`);
             
-            if (!processBtn || !fileList || !progress || !progressBar || !progressText || !result || !originalSizeEl || !compressedSizeEl) return;
+            if (!processBtn || !fileList || !progressContainer || !progressBar || !progressText || !result || !originalSizeEl || !compressedSizeEl) return;
             
             processBtn.addEventListener('click', function() {
                 if (!fileList.classList.contains('hidden')) {
                     // 显示进度条
-                    progress.classList.remove('hidden');
+                    progressContainer.classList.remove('hidden');
                     progressBar.style.width = '0%';
                     progressText.textContent = '0%';
                     
                     // 模拟处理进度（实际项目中替换为真实处理逻辑）
-                    const totalSize = parseInt(fileList.getAttribute('data-total-size'));
-                    const compressedSize = totalSize * (type === 'pdf' ? 0.4 : type === 'video' ? 0.3 : 0.5); // 模拟压缩后大小
+                    const totalSize = parseInt(fileList.getAttribute('data-total-size')) || 0;
+                    const ratio = type === 'pdf' ? 0.4 : (type === 'video' ? 0.3 : 0.5);
+                    const compressedSize = totalSize * ratio; // 模拟压缩后大小
                     
-                    let progress = 0;
+                    let progressValue = 0;
                     const interval = setInterval(() => {
-                        progress += Math.random() * 20;
-                        if (progress >= 100) {
-                            progress = 100;
+                        progressValue += Math.random() * 20;
+                        if (progressValue >= 100) {
+                            progressValue = 100;
                             clearInterval(interval);
                             
                             // 处理完成，显示结果
                             setTimeout(() => {
-                                progress.classList.add('hidden');
+                                progressContainer.classList.add('hidden');
                                 result.classList.remove('hidden');
                                 originalSizeEl.textContent = formatFileSize(totalSize);
                                 compressedSizeEl.textContent = formatFileSize(compressedSize);
                             }, 500);
                         }
-                        progressBar.style.width = `${progress}%`;
-                        progressText.textContent = `${Math.round(progress)}%`;
+                        progressBar.style.width = `${progressValue}%`;
+                        progressText.textContent = `${Math.round(progressValue)}%`;
                     }, 300);
                 }
             });
