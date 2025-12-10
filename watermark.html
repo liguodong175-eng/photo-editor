@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>狗蛋去水印 · 渐变填充增强版 + 一键下载</title>
+  <title>狗蛋去水印 · 增强修复 + 一键下载</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -15,15 +15,15 @@
 <body class="bg-gray-100">
   <!-- 头部 -->
   <header class="bg-white border-b py-4 mb-4 text-center text-lg font-semibold">
-    狗蛋去水印 · 渐变填充增强版
+    狗蛋去水印 · 智能背景修复增强版
   </header>
 
   <main class="max-w-6xl mx-auto px-4 pb-12">
     <!-- 说明 -->
     <section class="bg-white rounded-xl card-shadow p-5 mb-5 text-sm leading-relaxed space-y-1">
       <div>✅ 本地纯前端处理 · 不裁剪、不拉伸、不压缩原图</div>
-      <div>✅ 专门针对右下角「豆包AI生成」：窄区域覆盖 + 上方取色渐变填充 + 边缘柔化</div>
-      <div>✅ 支持批量上传 · 批量去水印 · 单张下载 · 一键下载全部</div>
+      <div>✅ 针对豆包右下角水印：窄区域覆盖 + 上方采样 + 渐变叠加 + 边缘柔化</div>
+      <div>✅ 支持批量上传 · 批量去水印 · 一键下载全部</div>
     </section>
 
     <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -82,7 +82,7 @@
   </main>
 
   <footer class="bg-white border-t py-3 text-center text-sm text-gray-400">
-    © 2025 狗蛋去水印 · 渐变填充增强版
+    © 2025 狗蛋去水印 · 增强修复 + 一键下载
   </footer>
 
   <script>
@@ -135,38 +135,14 @@
       return base + "_clean_" + idx + ".png";
     }
 
-    // 计算某个小区域的平均色
-    function getAvgColor(ctx, x, y, w, h, imgW, imgH) {
-      // 边界裁剪
-      let sx = Math.max(0, Math.min(imgW - 1, x));
-      let sy = Math.max(0, Math.min(imgH - 1, y));
-      let sw = Math.min(w, imgW - sx);
-      let sh = Math.min(h, imgH - sy);
-      if (sw <= 0 || sh <= 0) return "rgba(255,255,255,1)";
+    /* ---------------- 针对豆包水印的增强去水印算法 ----------------
+       关键参数（可根据你后续图片微调）：
+       - WM_W_RATIO: 水印区域占整图宽度的比例（越小越不容易伤到左侧大字）
+       - WM_H_RATIO: 水印区域占整图高度的比例
+    ---------------------------------------------------------------- */
 
-      const data = ctx.getImageData(sx, sy, sw, sh).data;
-      let r = 0, g = 0, b = 0, count = 0;
-      for (let i = 0; i < data.length; i += 4) {
-        r += data[i];
-        g += data[i + 1];
-        b += data[i + 2];
-        count++;
-      }
-      r = Math.round(r / count);
-      g = Math.round(g / count);
-      b = Math.round(b / count);
-      return `rgb(${r},${g},${b})`;
-    }
-
-    /* ---------------- 渐变填充型去水印算法 ----------------
-       核心：
-       - 只处理右下角更窄区域（宽约 11%，高约 7%），尽量不碰大字区域；
-       - 从水印正上方 / 左上方小块区域取平均色，做垂直渐变填充；
-       - 再对填充区域做轻度模糊，减少边缘感。
-    ------------------------------------------------------- */
-
-    const WM_W_RATIO = 0.11; // 右侧 11% 宽
-    const WM_H_RATIO = 0.07; // 底部 7% 高
+    const WM_W_RATIO = 0.12; // 只处理右侧约 12% 宽，避免破坏“ing”等大字
+    const WM_H_RATIO = 0.08; // 高度略小一点，刚好覆盖“豆包AI生成”
 
     async function smartRemoveWatermark(src) {
       const img = await loadImage(src);
@@ -178,57 +154,45 @@
 
       ctx.drawImage(img, 0, 0);
 
-      const imgW = img.width;
-      const imgH = img.height;
+      // 水印大致区域（右下角窄条）
+      const regionW = img.width * WM_W_RATIO;
+      const regionH = img.height * WM_H_RATIO;
+      const padX = Math.max(6, img.width * 0.005);  // 离右边、底边稍微留一点空隙
+      const padY = Math.max(6, img.height * 0.005);
 
-      const regionW = imgW * WM_W_RATIO;
-      const regionH = imgH * WM_H_RATIO;
-      const padX = Math.max(4, imgW * 0.005);
-      const padY = Math.max(4, imgH * 0.005);
+      const x = img.width - regionW - padX;
+      const y = img.height - regionH - padY;
 
-      // 覆盖区域：靠右、靠下的一小块
-      const x = imgW - regionW - padX;
-      const y = imgH - regionH - padY;
+      // ① 上方采样区域：同宽，高度更大一些，只取上方「干净背景」
+      const sampleW = regionW;
+      const sampleH = regionH * 1.6;
 
-      // 采样块尺寸
-      const sampleSize = Math.max(8, Math.min(regionW, regionH) * 0.6);
+      let sx = x;
+      let sy = y - sampleH - 4;
+      if (sy < 0) sy = 0;
+      if (sy + sampleH > img.height) sy = img.height - sampleH;
 
-      // 上方采样区域
-      const sampleTopColor = getAvgColor(
-        ctx,
-        x + regionW * 0.1,
-        y - sampleSize - 2,
-        sampleSize,
-        sampleSize,
-        imgW,
-        imgH
-      );
-
-      // 左上采样区域（避免墙角边缘）
-      const sampleLeftTopColor = getAvgColor(
-        ctx,
-        x - sampleSize - 2,
-        y - sampleSize - 2,
-        sampleSize,
-        sampleSize,
-        imgW,
-        imgH
-      );
-
-      // 垂直渐变填充
-      const gradient = ctx.createLinearGradient(x, y, x, y + regionH);
-      gradient.addColorStop(0, sampleTopColor);
-      gradient.addColorStop(1, sampleLeftTopColor || sampleTopColor);
-
+      // 先把这块上方区域整体拉伸填充到水印区域
       ctx.save();
-      ctx.fillStyle = gradient;
-      ctx.fillRect(x, y, regionW, regionH);
+      ctx.beginPath();
+      ctx.rect(x, y, regionW, regionH);
+      ctx.clip();
+      ctx.drawImage(canvas, sx, sy, sampleW, sampleH, x, y, regionW, regionH);
       ctx.restore();
 
-      // 轻度模糊边缘，让填充和周围衔接自然一点
-      ctx.save();
+      // ② 多行渐变叠加：从更靠上的区域逐行复制降低拉伸感
+      for (let row = 0; row < regionH; row++) {
+        const srcY = Math.max(0, y - regionH + row - 2);
+        const line = ctx.getImageData(x, srcY, regionW, 1);
+        const alpha = row / regionH; // 越往下覆盖越多
+        ctx.globalAlpha = alpha * 0.45; // 小幅叠加
+        ctx.putImageData(line, x, y + row);
+      }
+      ctx.globalAlpha = 1;
+
+      // ③ 边缘柔化：仅在水印区域边缘做轻度模糊
       ctx.globalAlpha = 0.45;
-      ctx.filter = "blur(2.2px)";
+      ctx.filter = "blur(3px)";
       ctx.drawImage(
         canvas,
         x - 2,
@@ -240,8 +204,6 @@
         regionW,
         regionH
       );
-      ctx.restore();
-
       ctx.globalAlpha = 1;
       ctx.filter = "none";
 
@@ -259,6 +221,7 @@
 
       card.innerHTML = `
         <div class="relative mb-2">
+          <!-- 重要：object-contain + max-h，保证不裁剪图片 -->
           <img src="${src}" class="max-h-56 w-full object-contain bg-white rounded" />
           <button
             class="absolute top-2 right-2 bg-white/90 px-2 py-1 text-xs rounded shadow delete-btn"
@@ -396,7 +359,7 @@
       processBtn.textContent = "一键去水印";
     };
 
-    // 一键下载全部：自动先处理、再顺序下载
+    // 一键下载全部：自动先处理，再顺序下载
     downloadAllBtn.onclick = async () => {
       const cards = Array.from(previewGrid.children);
       if (!cards.length) {
