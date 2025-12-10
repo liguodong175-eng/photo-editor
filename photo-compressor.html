@@ -437,6 +437,18 @@
         let currentPath = '/'; // 当前路径
         const routePages = document.querySelectorAll('.route-page'); // 所有路由页面
         const navItems = document.querySelectorAll('.nav-item'); // 所有导航项
+
+        // 存储上传文件 & "压缩后"信息
+        const uploadedFiles = {
+            pdf: [],
+            video: [],
+            image: []
+        };
+        const compressedFiles = {
+            pdf: null,   // { format: 'pdf' | 'docx', files: File[] }
+            video: null, // { format: 'mp4' | 'avi' | 'mkv', files: File[] }
+            image: null  // { format: 'jpg' | 'png' | 'webp', files: File[] }
+        };
         
         // 修复：导航项点击处理（阻止默认行为，确保路由切换）
         function handleNavClick(event, path) {
@@ -509,159 +521,4 @@
             }
             
             // 3. 更新导航高亮（当前路径对应的导航项高亮）
-            updateNavHighlight();
-        }
-        
-        // 导航到指定路径
-        function navigateTo(path) {
-            window.location.hash = path;
-            // 关闭移动端菜单
-            const mobileMenu = document.getElementById('mobile-menu');
-            if (mobileMenu) {
-                mobileMenu.classList.add('hidden');
-            }
-        }
-        
-        // 更新导航高亮
-        function updateNavHighlight() {
-            navItems.forEach(item => {
-                const itemPath = item.getAttribute('data-path');
-                if (itemPath === currentPath) {
-                    item.classList.add('nav-active');
-                } else {
-                    item.classList.remove('nav-active');
-                }
-            });
-        }
-        
-        // 2. 绑定所有上传文件事件
-        function bindUploadEvents() {
-            // PDF上传
-            bindFileUpload('pdf');
-            // 视频上传
-            bindFileUpload('video');
-            // 图片上传
-            bindFileUpload('image');
-            
-            // 绑定处理按钮事件
-            bindProcessBtn('pdf');
-            bindProcessBtn('video');
-            bindProcessBtn('image');
-            
-            // 绑定下载按钮事件
-            bindDownloadBtn('pdf');
-            bindDownloadBtn('video');
-            bindDownloadBtn('image');
-        }
-        
-        // 通用文件上传绑定（复用代码，支持PDF/视频/图片）
-        function bindFileUpload(type) {
-            const fileInput = document.getElementById(`${type}-upload`);
-            const fileList = document.getElementById(`${type}-file-list`);
-            const filesContainer = document.getElementById(`${type}-files-container`);
-            const processBtn = document.getElementById(`${type}-process-btn`);
-            
-            if (!fileInput || !fileList || !filesContainer || !processBtn) return; // 防止元素不存在报错
-            
-            fileInput.addEventListener('change', function(e) {
-                const files = e.target.files;
-                if (!files || !files.length) return;
-                
-                // 显示文件列表
-                fileList.classList.remove('hidden');
-                filesContainer.innerHTML = '';
-                
-                // 计算总大小
-                let totalSize = 0;
-                Array.from(files).forEach(file => {
-                    totalSize += file.size;
-                    // 添加文件项
-                    const fileItem = document.createElement('div');
-                    fileItem.className = 'bg-gray-100 rounded-lg px-3 py-2 flex items-center justify-between';
-                    fileItem.innerHTML = `
-                        <span class="text-sm truncate max-w-[200px]">${file.name}</span>
-                        <span class="text-sm text-neutral">${formatFileSize(file.size)}</span>
-                    `;
-                    filesContainer.appendChild(fileItem);
-                });
-                
-                // 启用处理按钮
-                processBtn.disabled = false;
-                
-                // 存储总大小（用于结果显示）
-                fileList.setAttribute('data-total-size', totalSize);
-            });
-        }
-        
-        // 通用处理按钮绑定（修复变量名冲突）
-        function bindProcessBtn(type) {
-            const processBtn = document.getElementById(`${type}-process-btn`);
-            const fileList = document.getElementById(`${type}-file-list`);
-            const progressContainer = document.getElementById(`${type}-progress`);
-            const progressBar = document.getElementById(`${type}-progress-bar`);
-            const progressText = document.getElementById(`${type}-progress-text`);
-            const result = document.getElementById(`${type}-result`);
-            const originalSizeEl = document.getElementById(`${type}-original-size`);
-            const compressedSizeEl = document.getElementById(`${type}-compressed-size`);
-            
-            if (!processBtn || !fileList || !progressContainer || !progressBar || !progressText || !result || !originalSizeEl || !compressedSizeEl) return;
-            
-            processBtn.addEventListener('click', function() {
-                if (!fileList.classList.contains('hidden')) {
-                    // 显示进度条
-                    progressContainer.classList.remove('hidden');
-                    progressBar.style.width = '0%';
-                    progressText.textContent = '0%';
-                    
-                    // 模拟处理进度（实际项目中替换为真实处理逻辑）
-                    const totalSize = parseInt(fileList.getAttribute('data-total-size')) || 0;
-                    const ratio = type === 'pdf' ? 0.4 : (type === 'video' ? 0.3 : 0.5);
-                    const compressedSize = totalSize * ratio; // 模拟压缩后大小
-                    
-                    let progressValue = 0;
-                    const interval = setInterval(() => {
-                        progressValue += Math.random() * 20;
-                        if (progressValue >= 100) {
-                            progressValue = 100;
-                            clearInterval(interval);
-                            
-                            // 处理完成，显示结果
-                            setTimeout(() => {
-                                progressContainer.classList.add('hidden');
-                                result.classList.remove('hidden');
-                                originalSizeEl.textContent = formatFileSize(totalSize);
-                                compressedSizeEl.textContent = formatFileSize(compressedSize);
-                            }, 500);
-                        }
-                        progressBar.style.width = `${progressValue}%`;
-                        progressText.textContent = `${Math.round(progressValue)}%`;
-                    }, 300);
-                }
-            });
-        }
-        
-        // 通用下载按钮绑定
-        function bindDownloadBtn(type) {
-            const downloadBtn = document.getElementById(`${type}-download-btn`);
-            if (!downloadBtn) return;
-            
-            downloadBtn.addEventListener('click', function() {
-                alert(`开始下载${type === 'pdf' ? 'PDF' : type === 'video' ? '视频' : '图片'}压缩文件`);
-                // 实际项目中这里添加下载逻辑（如生成Blob并创建下载链接）
-            });
-        }
-        
-        // 格式化文件大小
-        function formatFileSize(bytes) {
-            if (bytes < 1024) return bytes + ' B';
-            else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
-            else return (bytes / 1048576).toFixed(2) + ' MB';
-        }
-        
-        // 初始化应用 - 确保DOM加载完成后执行
-        document.addEventListener('DOMContentLoaded', function() {
-            initRouter();
-        });
-    </script>
-</body>
-</html>
+            updateNav
