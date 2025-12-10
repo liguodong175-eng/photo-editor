@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>狗蛋去水印 · 强力模式 + 批量下载（≤500KB）</title>
+  <title>狗蛋去水印 · 强力模式（PNG输出）+ 批量下载</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -13,17 +13,17 @@
 <body class="bg-gray-100">
   <!-- Header -->
   <header class="bg-white border-b py-4 mb-4 text-center text-lg font-semibold">
-    狗蛋去水印 · 强力模式（缩小水印区，输出 ≤ 500KB）
+    狗蛋去水印 · 强力模式（PNG 输出）
   </header>
 
   <main class="max-w-6xl mx-auto px-4 pb-12">
     <!-- Info -->
     <section class="bg-white rounded-xl card-shadow p-5 mb-5 text-sm leading-relaxed space-y-1">
-      <div>✅ 本地纯前端处理 · 不裁剪、不拉伸原图尺寸</div>
+      <div>✅ 本地纯前端处理 · 不裁剪、不拉伸预览</div>
       <div>✅ 强力去除优先：大块背景采样覆盖 + 按行纹理回灌 + 边缘柔化</div>
       <div>✅ 专注右下角“豆包AI生成”区域（含不规则/渐变/半透明）</div>
       <div>✅ 支持批量上传 · 一键去水印 · 单张下载 · 一键下载全部</div>
-      <div>✅ 导出 JPEG 自动压缩到 ≤ 500KB</div>
+      <div>✅ 输出 PNG（可选体积控制策略）</div>
     </section>
 
     <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -90,7 +90,7 @@
   </main>
 
   <footer class="bg-white border-t py-3 text-center text-sm text-gray-400">
-    © 2025 狗蛋去水印 · 强力模式
+    © 2025 狗蛋去水印 · 强力模式（PNG）
   </footer>
 
   <script>
@@ -105,7 +105,14 @@
 
     const MAX_FILES = 20;
     const MAX_SIZE = 5 * 1024 * 1024;
-    const OUTPUT_MAX_BYTES = 500 * 1024;
+
+    // -------- PNG 体积控制（可选）--------
+    // PNG 没有质量参数，只能通过“缩放导出尺寸”降低体积
+    const ENABLE_PNG_SIZE_LIMIT = true;
+    const OUTPUT_MAX_BYTES = 500 * 1024; // 目标 500KB
+    const MIN_SCALE = 0.70;              // 最低缩放比例
+    const SCALE_STEP = 0.90;             // 每次缩小 10%
+    const MAX_SCALE_TRIES = 10;
 
     /* ---------------- 文件/图片工具 ---------------- */
 
@@ -140,28 +147,63 @@
       return Math.floor(base64.length * 3 / 4);
     }
 
-    function canvasToCompressedJPEG(canvas, maxBytes = OUTPUT_MAX_BYTES) {
-      let quality = 0.9;
-      let dataUrl = canvas.toDataURL("image/jpeg", quality);
-      while (base64Size(dataUrl) > maxBytes && quality > 0.2) {
-        quality -= 0.1;
-        dataUrl = canvas.toDataURL("image/jpeg", quality);
-      }
-      return dataUrl;
-    }
-
     function safeFilename(name, index) {
       const base =
         (name || "image")
           .replace(/\.[^.]+$/, "")
           .replace(/[^\w\u4e00-\u9fa5-]+/g, "_") || "image";
       const idx = String(index).padStart(3, "0");
-      return `${base}_clean_${idx}.jpg`;
+      return `${base}_clean_${idx}.png`;
     }
 
-    /* ---------------- 强力去水印算法 ---------------- */
+    // 将源 canvas 按 scale 复制到新 canvas
+    function scaleCanvas(srcCanvas, scale = 1) {
+      if (scale === 1) return srcCanvas;
 
-    // ✅ 缩小后的候选区（比上一版明显更小）
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(srcCanvas.width * scale));
+      c.height = Math.max(1, Math.round(srcCanvas.height * scale));
+      const cctx = c.getContext("2d");
+      cctx.drawImage(srcCanvas, 0, 0, c.width, c.height);
+      return c;
+    }
+
+    // 输出 PNG；若开启体积控制则尝试缩放到 ≤ maxBytes
+    function canvasToPNGWithOptionalLimit(canvas) {
+      if (!ENABLE_PNG_SIZE_LIMIT) {
+        return canvas.toDataURL("image/png");
+      }
+
+      let scale = 1;
+      let tries = 0;
+
+      while (tries < MAX_SCALE_TRIES) {
+        const outCanvas = scaleCanvas(canvas, scale);
+        const dataUrl = outCanvas.toDataURL("image/png");
+        const size = base64Size(dataUrl);
+
+        if (size <= OUTPUT_MAX_BYTES || scale <= MIN_SCALE) {
+          return dataUrl;
+        }
+
+        scale = scale * SCALE_STEP;
+        tries++;
+      }
+
+      // 兜底
+      return scaleCanvas(canvas, MIN_SCALE).toDataURL("image/png");
+    }
+
+    /* ---------------- 强力去水印算法 ----------------
+       目标：去除成功率优先
+       1) 定位右下角候选区（缩小版）
+       2) 取上方/左上方大块背景区域做“缩放覆盖”
+       3) 按行纹理回灌
+       4) 边缘轻度模糊
+       5) 输出 PNG（可选体积控制）
+    ------------------------------------------------ */
+
+    // ✅ 你上一版要求“水印区域小一点”，这里用较稳的缩小档
     const WM_W_RATIO = 0.18; // 右侧 18%
     const WM_H_RATIO = 0.10; // 底部 10%
 
@@ -235,7 +277,8 @@
       ctx.globalAlpha = 1;
       ctx.filter = "none";
 
-      return canvasToCompressedJPEG(canvas, OUTPUT_MAX_BYTES);
+      // ④ 输出 PNG（可选体积控制）
+      return canvasToPNGWithOptionalLimit(canvas);
     }
 
     /* ---------------- UI 渲染 ---------------- */
@@ -357,7 +400,7 @@
       }
     }
 
-    /* ---------------- 事件绑定 ---------------- */
+    /* ---------------- 事件绑定（修复需点两次的问题） ---------------- */
 
     uploadBtn.addEventListener("click", (e) => {
       e.stopPropagation();
