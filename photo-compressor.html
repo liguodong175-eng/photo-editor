@@ -1,490 +1,756 @@
-<script>
-    // ====== 全局状态 ======
-    let currentPath = '/';
-    const routePages = document.querySelectorAll('.route-page');
-    const navItems = document.querySelectorAll('.nav-item');
-
-    const uploadedFiles = {
-        pdf: [],
-        video: [],
-        image: []
-    };
-
-    const compressedFiles = {
-        pdf: null,    // { format, files: File[] }
-        video: null,  // { format, files: File[] }
-        image: null   // { format, files: File[] }
-    };
-
-    // ====== 辅助方法 ======
-    function humanFileSize(size) {
-        if (size === 0) return '0 B';
-        const units = ['B', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(size) / Math.log(1024));
-        const value = size / Math.pow(1024, i);
-        return value.toFixed(2) + ' ' + units[i];
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>在线图片压缩与清晰度修复（纯前端）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * {
+      box-sizing: border-box;
     }
 
-    function showLoadingOverlay(show) {
-        const overlay = document.getElementById('loading-overlay');
-        if (!overlay) return;
-        if (show) {
-            overlay.classList.remove('hidden');
-        } else {
-            overlay.classList.add('hidden');
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 24px 16px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      padding: 24px 28px 28px;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin: 0 0 16px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #111827;
+    }
+
+    .section {
+      margin-top: 16px;
+      margin-bottom: 10px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+    }
+
+    .file-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    input[type="file"] {
+      font-size: 13px;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 13px;
+    }
+
+    .control-label {
+      font-weight: 500;
+      color: #374151;
+    }
+
+    .control-label span.value {
+      font-weight: 600;
+      color: #2563eb;
+      margin-left: 4px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    select,
+    input[type="number"] {
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      font-size: 13px;
+      outline: none;
+    }
+
+    select:focus,
+    input[type="number"]:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.3);
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+    }
+
+    .button-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease;
+      text-decoration: none;
+      user-select: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #ffffff;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.35);
+    }
+
+    .btn-primary:disabled {
+      background: #9ca3af;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+      border: 1px solid #d1d5db;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(15, 23, 42, 0.15);
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 3px 10px rgba(15, 23, 42, 0.18);
+    }
+
+    .btn-download {
+      margin-left: auto;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .preview-card {
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      padding: 10px 12px 12px;
+      background: #f9fafb;
+    }
+
+    .preview-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #111827;
+    }
+
+    .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #e5f0ff;
+      color: #1d4ed8;
+      font-weight: 500;
+    }
+
+    .preview-info {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 6px;
+      min-height: 35px;
+    }
+
+    .preview-image-wrap {
+      border-radius: 10px;
+      overflow: hidden;
+      background: repeating-conic-gradient(#e5e7eb 0 25%, #f9fafb 0 50%) 50% / 16px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 160px;
+      max-height: 320px;
+    }
+
+    .preview-image-wrap img {
+      max-width: 100%;
+      max-height: 320px;
+      display: none;
+    }
+
+    .note {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 640px) {
+      .card {
+        padding: 18px 16px 20px;
+      }
+
+      .button-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .btn-download {
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>在线图片压缩与清晰度修复</h1>
+      <div class="subtitle">
+        所有处理均在浏览器本地完成，不上传服务器。支持格式转换、压缩质量调节与清晰度增强。
+      </div>
+
+      <!-- 上传图片 -->
+      <div class="section">
+        <div class="section-title">1. 选择图片</div>
+        <div class="file-input-wrapper">
+          <input type="file" id="fileInput" accept="image/*" />
+          <div class="hint">支持常见格式：JPG / PNG / WebP 等</div>
+        </div>
+      </div>
+
+      <!-- 压缩参数设置 -->
+      <div class="section">
+        <div class="section-title">2. 设置压缩参数</div>
+        <div class="controls-grid">
+          <div class="control-group">
+            <div class="control-label">
+              输出尺寸（按比例缩放）：
+              <span class="value" id="scaleValueText">100%</span>
+            </div>
+            <input type="range" id="scaleRange" min="10" max="100" value="100" />
+            <div class="hint">
+              实际输出尺寸：<span id="targetSizeText">-</span>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              压缩质量（仅 JPEG / WebP 有效）：
+              <span class="value" id="qualityValueText">80%</span>
+            </div>
+            <input type="range" id="qualityRange" min="10" max="100" value="80" />
+            <div class="hint">
+              数值越小，体积越小但画质越差；建议 60% ~ 90%。
+            </div>
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">输出格式：</div>
+            <select id="formatSelect">
+              <option value="original">保持原格式</option>
+              <option value="image/jpeg">JPEG（有损压缩，体积较小）</option>
+              <option value="image/png">PNG（无损压缩，适合透明图）</option>
+              <option value="image/webp">WebP（高压缩率，现代浏览器）</option>
+            </select>
+            <div class="hint">
+              注意：将带透明通道的 PNG 转成 JPEG 时会自动填充白色背景。
+            </div>
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              清晰度修复（锐化）强度：
+              <span class="value" id="sharpenValueText">0%</span>
+            </div>
+            <input type="range" id="sharpenRange" min="0" max="100" value="0" disabled />
+            <div class="checkbox-row">
+              <input type="checkbox" id="sharpenToggle" />
+              <label for="sharpenToggle">开启清晰度修复（针对模糊略虚的图片）</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="button-row">
+          <button class="btn btn-primary" id="compressBtn" disabled>开始压缩</button>
+          <button class="btn btn-secondary" id="resetBtn" type="button">重置</button>
+          <a class="btn btn-primary btn-download" id="downloadLink" href="#" download="compressed-image.jpg" style="display:none;">
+            下载压缩图片
+          </a>
+        </div>
+      </div>
+
+      <!-- 预览区域 -->
+      <div class="section">
+        <div class="section-title">3. 预览与对比</div>
+        <div class="preview-grid">
+          <div class="preview-card">
+            <div class="preview-title">
+              原始图片
+              <span class="badge">源文件</span>
+            </div>
+            <div class="preview-info" id="originalInfo">尚未选择图片</div>
+            <div class="preview-image-wrap">
+              <img id="originalPreview" alt="原始图片预览" />
+            </div>
+          </div>
+
+          <div class="preview-card">
+            <div class="preview-title">
+              压缩后图片
+              <span class="badge" id="compressedBadge">待生成</span>
+            </div>
+            <div class="preview-info" id="compressedInfo">压缩后信息将显示在这里</div>
+            <div class="preview-image-wrap">
+              <img id="compressedPreview" alt="压缩后图片预览" />
+            </div>
+          </div>
+        </div>
+        <div class="note">
+          温馨提示：如果图片非常大（例如超过 8000×8000 像素），在浏览器中处理可能会稍慢或内存吃紧，可先用系统工具粗略缩小后再上传精细压缩。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 全局状态
+    let originalFile = null;
+    let originalImage = null;
+    let originalMime = "";
+    let lastDownloadUrl = null;
+
+    // DOM 元素
+    const fileInput = document.getElementById("fileInput");
+    const scaleRange = document.getElementById("scaleRange");
+    const scaleValueText = document.getElementById("scaleValueText");
+    const targetSizeText = document.getElementById("targetSizeText");
+    const qualityRange = document.getElementById("qualityRange");
+    const qualityValueText = document.getElementById("qualityValueText");
+    const formatSelect = document.getElementById("formatSelect");
+    const sharpenRange = document.getElementById("sharpenRange");
+    const sharpenValueText = document.getElementById("sharpenValueText");
+    const sharpenToggle = document.getElementById("sharpenToggle");
+
+    const compressBtn = document.getElementById("compressBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const downloadLink = document.getElementById("downloadLink");
+
+    const originalInfo = document.getElementById("originalInfo");
+    const compressedInfo = document.getElementById("compressedInfo");
+    const compressedBadge = document.getElementById("compressedBadge");
+    const originalPreview = document.getElementById("originalPreview");
+    const compressedPreview = document.getElementById("compressedPreview");
+
+    // 工具函数：格式化文件大小
+    function formatFileSize(bytes) {
+      if (!Number.isFinite(bytes)) return "-";
+      if (bytes >= 1024 * 1024) {
+        return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+      }
+      return (bytes / 1024).toFixed(2) + " KB";
+    }
+
+    // 工具函数：DataURL 转 Blob
+    function dataURLToBlob(dataURL) {
+      const parts = dataURL.split(",");
+      const match = parts[0].match(/:(.*?);/);
+      const mime = match ? match[1] : "image/png";
+      const bstr = atob(parts[1]);
+      const len = bstr.length;
+      const u8arr = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        u8arr[i] = bstr.charCodeAt(i);
+      }
+      return new Blob([u8arr], { type: mime });
+    }
+
+    function getTargetMime(selected, original) {
+      if (selected === "original") {
+        if (["image/jpeg", "image/png", "image/webp"].includes(original)) {
+          return original;
         }
+        // 其他格式统一转成 PNG
+        return "image/png";
+      }
+      return selected;
     }
 
-    function navigateTo(path) {
-        if (window.location.hash !== '#' + path) {
-            window.location.hash = '#' + path;
-        } else {
-            // hash 未变更时手动触发一次
-            handleHashChange();
-        }
+    function getExtensionByMime(mime) {
+      switch (mime) {
+        case "image/jpeg":
+          return ".jpg";
+        case "image/png":
+          return ".png";
+        case "image/webp":
+          return ".webp";
+        default:
+          return ".png";
+      }
     }
 
-    function updateNav() {
-        navItems.forEach(item => {
-            const path = item.getAttribute('data-path');
-            if (path === currentPath) {
-                item.classList.add('nav-active');
-            } else {
-                item.classList.remove('nav-active');
+    function updateOriginalInfo() {
+      if (!originalFile || !originalImage) {
+        originalInfo.textContent = "尚未选择图片";
+        return;
+      }
+      originalInfo.innerHTML =
+        "文件名：" +
+        originalFile.name +
+        "<br>格式：" +
+        (originalMime || "未知") +
+        "<br>尺寸：" +
+        originalImage.width +
+        " × " +
+        originalImage.height +
+        " px" +
+        "<br>大小：" +
+        formatFileSize(originalFile.size);
+    }
+
+    function updateTargetSize() {
+      if (!originalImage) {
+        targetSizeText.textContent = "-";
+        return;
+      }
+      const scale = parseInt(scaleRange.value, 10) || 100;
+      const w = Math.max(1, Math.round((originalImage.width * scale) / 100));
+      const h = Math.max(1, Math.round((originalImage.height * scale) / 100));
+      targetSizeText.textContent = w + " × " + h + " px";
+    }
+
+    function updateCompressedInfo(blob, width, height) {
+      if (!blob) {
+        compressedInfo.textContent = "压缩后信息将显示在这里";
+        compressedBadge.textContent = "待生成";
+        return;
+      }
+      const sizeText = formatFileSize(blob.size);
+      let ratioText = "";
+      if (originalFile && originalFile.size > 0) {
+        const ratio = ((blob.size / originalFile.size) * 100).toFixed(1);
+        ratioText = "（约为原始大小的 " + ratio + "%）";
+      }
+      compressedInfo.innerHTML =
+        "尺寸：" +
+        width +
+        " × " +
+        height +
+        " px" +
+        "<br>大小：" +
+        sizeText +
+        " " +
+        ratioText;
+      compressedBadge.textContent = "已生成";
+    }
+
+    // 简单锐化（卷积），amount ∈ [0, 1]
+    function applySharpen(imageData, amount) {
+      if (amount <= 0) return imageData;
+
+      const w = imageData.width;
+      const h = imageData.height;
+      const src = imageData.data;
+      const dst = new Uint8ClampedArray(src.length);
+
+      const kernel = [
+        0, -1, 0,
+        -1, 5, -1,
+        0, -1, 0
+      ];
+
+      function clamp(v) {
+        v = Math.round(v);
+        if (v < 0) return 0;
+        if (v > 255) return 255;
+        return v;
+      }
+
+      // 内部区域使用卷积
+      for (let y = 1; y < h - 1; y++) {
+        for (let x = 1; x < w - 1; x++) {
+          let r = 0, g = 0, b = 0;
+          let kIndex = 0;
+
+          for (let ky = -1; ky <= 1; ky++) {
+            for (let kx = -1; kx <= 1; kx++) {
+              const px = x + kx;
+              const py = y + ky;
+              const idx = (py * w + px) * 4;
+              const k = kernel[kIndex++];
+
+              r += src[idx] * k;
+              g += src[idx + 1] * k;
+              b += src[idx + 2] * k;
             }
-        });
+          }
+
+          const idx = (y * w + x) * 4;
+          // 与原图做插值，避免过度锐化产生噪点
+          const or = src[idx];
+          const og = src[idx + 1];
+          const ob = src[idx + 2];
+
+          dst[idx] = clamp(or * (1 - amount) + r * amount);
+          dst[idx + 1] = clamp(og * (1 - amount) + g * amount);
+          dst[idx + 2] = clamp(ob * (1 - amount) + b * amount);
+          dst[idx + 3] = src[idx + 3];
+        }
+      }
+
+      // 边缘像素直接复制原值
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          if (x === 0 || x === w - 1 || y === 0 || y === h - 1) {
+            const idx = (y * w + x) * 4;
+            dst[idx] = src[idx];
+            dst[idx + 1] = src[idx + 1];
+            dst[idx + 2] = src[idx + 2];
+            dst[idx + 3] = src[idx + 3];
+          }
+        }
+      }
+
+      imageData.data.set(dst);
+      return imageData;
     }
 
-    // ====== 路由：hash 变化处理 ======
-    function handleHashChange() {
-        const hash = window.location.hash || '#/';
-        currentPath = hash.slice(1); // 去掉 #
+    // 事件绑定：文件选择
+    fileInput.addEventListener("change", function () {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
 
-        // 1. 隐藏所有页面
-        routePages.forEach(page => page.classList.add('hidden'));
+      if (!file.type.startsWith("image/")) {
+        alert("请选择图片文件（JPG / PNG / WebP 等）");
+        fileInput.value = "";
+        return;
+      }
 
-        // 2. 根据路径显示对应页面
-        let targetPageId = 'home-page';
-        switch (currentPath) {
-            case '/':
-                targetPageId = 'home-page';
-                break;
-            case '/pdf-compress':
-                targetPageId = 'pdf-compress-page';
-                break;
-            case '/video-compress':
-                targetPageId = 'video-compress-page';
-                break;
-            case '/image-compress':
-                targetPageId = 'image-compress-page';
-                break;
-            default:
-                targetPageId = 'home-page';
-                currentPath = '/';
+      originalFile = file;
+      originalMime = file.type || "";
+
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = function () {
+        originalImage = img;
+        originalPreview.src = url;
+        originalPreview.style.display = "block";
+        updateOriginalInfo();
+        updateTargetSize();
+        compressBtn.disabled = false;
+      };
+      img.onerror = function () {
+        alert("图片加载失败，请尝试其他文件。");
+        originalFile = null;
+        originalImage = null;
+        originalMime = "";
+        originalPreview.src = "";
+        originalPreview.style.display = "none";
+        updateOriginalInfo();
+        compressBtn.disabled = true;
+      };
+      img.src = url;
+    });
+
+    // 事件：比例滑块
+    scaleRange.addEventListener("input", function () {
+      const value = parseInt(scaleRange.value, 10) || 100;
+      scaleValueText.textContent = value + "%";
+      updateTargetSize();
+    });
+
+    // 事件：质量滑块
+    qualityRange.addEventListener("input", function () {
+      const value = parseInt(qualityRange.value, 10) || 80;
+      qualityValueText.textContent = value + "%";
+    });
+
+    // 事件：清晰度修复开关
+    sharpenToggle.addEventListener("change", function () {
+      const enabled = sharpenToggle.checked;
+      sharpenRange.disabled = !enabled;
+      if (!enabled) {
+        sharpenRange.value = 0;
+        sharpenValueText.textContent = "0%";
+      }
+    });
+
+    // 事件：锐化强度滑块
+    sharpenRange.addEventListener("input", function () {
+      const value = parseInt(sharpenRange.value, 10) || 0;
+      sharpenValueText.textContent = value + "%";
+    });
+
+    // 事件：开始压缩
+    compressBtn.addEventListener("click", function () {
+      if (!originalImage || !originalFile) {
+        alert("请先选择一张图片。");
+        return;
+      }
+
+      const scale = parseInt(scaleRange.value, 10) || 100;
+      const targetW = Math.max(1, Math.round((originalImage.width * scale) / 100));
+      const targetH = Math.max(1, Math.round((originalImage.height * scale) / 100));
+
+      const quality = (parseInt(qualityRange.value, 10) || 80) / 100;
+      const selectedFormat = formatSelect.value;
+      const mime = getTargetMime(selectedFormat, originalMime);
+
+      const sharpenEnabled = sharpenToggle.checked;
+      const sharpenAmount = sharpenEnabled ? (parseInt(sharpenRange.value, 10) || 0) / 100 : 0;
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      canvas.width = targetW;
+      canvas.height = targetH;
+
+      // JPEG 不支持透明，先填白
+      if (mime === "image/jpeg") {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+
+      if (sharpenAmount > 0) {
+        try {
+          let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          imgData = applySharpen(imgData, sharpenAmount);
+          ctx.putImageData(imgData, 0, 0);
+        } catch (e) {
+          console.warn("锐化处理失败（可能是跨域图片或图片太大）：", e);
         }
+      }
 
-        const targetPage = document.getElementById(targetPageId);
-        if (targetPage) {
-            targetPage.classList.remove('hidden');
-        }
+      let dataURL;
+      if (mime === "image/png") {
+        dataURL = canvas.toDataURL("image/png");
+      } else {
+        dataURL = canvas.toDataURL(mime, quality);
+      }
 
-        // 3. 更新导航高亮
-        updateNav();
+      const blob = dataURLToBlob(dataURL);
 
-        // 4. 关闭移动端菜单
-        const mobileMenu = document.getElementById('mobile-menu');
-        if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
-            mobileMenu.classList.add('hidden');
-        }
-    }
+      // 更新预览
+      compressedPreview.src = dataURL;
+      compressedPreview.style.display = "block";
+      updateCompressedInfo(blob, canvas.width, canvas.height);
 
-    function handleNavClick(event, path) {
-        event.preventDefault();
-        navigateTo(path);
-    }
+      // 更新下载链接
+      if (lastDownloadUrl) {
+        URL.revokeObjectURL(lastDownloadUrl);
+        lastDownloadUrl = null;
+      }
+      const blobUrl = URL.createObjectURL(blob);
+      lastDownloadUrl = blobUrl;
+      const ext = getExtensionByMime(blob.type || mime);
+      downloadLink.href = blobUrl;
+      downloadLink.download = "compressed-image" + ext;
+      downloadLink.style.display = "inline-flex";
+    });
 
-    // ====== 文件列表渲染 ======
-    function renderFileList(type) {
-        let listWrapper, listContainer;
-        if (type === 'pdf') {
-            listWrapper = document.getElementById('pdf-file-list');
-            listContainer = document.getElementById('pdf-files-container');
-        } else if (type === 'video') {
-            listWrapper = document.getElementById('video-file-list');
-            listContainer = document.getElementById('video-files-container');
-        } else if (type === 'image') {
-            listWrapper = document.getElementById('image-file-list');
-            listContainer = document.getElementById('image-files-container');
-        }
+    // 事件：重置
+    resetBtn.addEventListener("click", function () {
+      fileInput.value = "";
+      originalFile = null;
+      originalImage = null;
+      originalMime = "";
 
-        if (!listWrapper || !listContainer) return;
+      originalPreview.src = "";
+      originalPreview.style.display = "none";
+      compressedPreview.src = "";
+      compressedPreview.style.display = "none";
 
-        const files = uploadedFiles[type] || [];
-        if (!files.length) {
-            listWrapper.classList.add('hidden');
-            listContainer.innerHTML = '';
-            return;
-        }
+      updateOriginalInfo();
+      updateCompressedInfo(null, 0, 0);
+      targetSizeText.textContent = "-";
 
-        listWrapper.classList.remove('hidden');
-        listContainer.innerHTML = '';
+      scaleRange.value = 100;
+      scaleValueText.textContent = "100%";
+      qualityRange.value = 80;
+      qualityValueText.textContent = "80%";
 
-        files.forEach(file => {
-            const div = document.createElement('div');
-            div.className = 'px-3 py-1 rounded-full bg-gray-100 text-xs flex items-center space-x-2';
-            div.innerHTML = `
-                <span class="truncate max-w-[140px]">${file.name}</span>
-                <span class="text-neutral text-[11px]">${humanFileSize(file.size)}</span>
-            `;
-            listContainer.appendChild(div);
-        });
-    }
+      sharpenToggle.checked = false;
+      sharpenRange.disabled = true;
+      sharpenRange.value = 0;
+      sharpenValueText.textContent = "0%";
 
-    function replaceFileExt(name, newExt) {
-        const idx = name.lastIndexOf('.');
-        if (idx === -1) return name + '.' + newExt;
-        return name.slice(0, idx + 1) + newExt;
-    }
+      formatSelect.value = "original";
 
-    // 简单锐化滤镜（可选）
-    function applySharpen(ctx, width, height) {
-        const imgData = ctx.getImageData(0, 0, width, height);
-        const data = imgData.data;
-        const copy = new Uint8ClampedArray(data);
-        const w = width;
-        const h = height;
-        const kernel = [
-            0, -1, 0,
-            -1, 5, -1,
-            0, -1, 0
-        ];
-        const side = 3;
-        const half = 1;
+      compressBtn.disabled = true;
+      downloadLink.style.display = "none";
 
-        for (let y = 1; y < h - 1; y++) {
-            for (let x = 1; x < w - 1; x++) {
-                let r = 0, g = 0, b = 0;
-                for (let ky = -half; ky <= half; ky++) {
-                    for (let kx = -half; kx <= half; kx++) {
-                        const cx = x + kx;
-                        const cy = y + ky;
-                        const pos = (cy * w + cx) * 4;
-                        const weight = kernel[(ky + half) * side + (kx + half)];
-                        r += copy[pos] * weight;
-                        g += copy[pos + 1] * weight;
-                        b += copy[pos + 2] * weight;
-                    }
-                }
-                const i = (y * w + x) * 4;
-                data[i] = Math.min(255, Math.max(0, r));
-                data[i + 1] = Math.min(255, Math.max(0, g));
-                data[i + 2] = Math.min(255, Math.max(0, b));
-            }
-        }
-        ctx.putImageData(imgData, 0, 0);
-    }
-
-    function compressSingleImage(file, format, quality, needSharpen) {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = function () {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-
-                let w = img.naturalWidth;
-                let h = img.naturalHeight;
-                // 防止超大图片，可设置一个最大边长
-                const maxSide = 2000;
-                if (w > maxSide || h > maxSide) {
-                    const scale = Math.min(maxSide / w, maxSide / h);
-                    w = Math.round(w * scale);
-                    h = Math.round(h * scale);
-                }
-
-                canvas.width = w;
-                canvas.height = h;
-                ctx.drawImage(img, 0, 0, w, h);
-
-                if (needSharpen) {
-                    applySharpen(ctx, w, h);
-                }
-
-                let mimeType;
-                if (format === 'png') mimeType = 'image/png';
-                else if (format === 'webp') mimeType = 'image/webp';
-                else mimeType = 'image/jpeg';
-
-                const qualityParam = (format === 'png') ? 1 : quality; // PNG 质量参数基本无效
-
-                canvas.toBlob(blob => {
-                    if (!blob) {
-                        reject(new Error('图片压缩失败'));
-                        return;
-                    }
-                    const newName = replaceFileExt(file.name, format === 'jpg' ? 'jpg' : format);
-                    const newFile = new File([blob], newName, { type: mimeType });
-                    resolve(newFile);
-                }, mimeType, qualityParam);
-            };
-            img.onerror = () => reject(new Error('图片加载失败'));
-            img.src = URL.createObjectURL(file);
-        });
-    }
-
-    // ====== 图片压缩主流程 ======
-    async function compressImageFiles() {
-        const files = uploadedFiles.image;
-        if (!files.length) return;
-
-        const qualityInput = document.getElementById('image-quality');
-        const formatSelect = document.getElementById('image-output-format');
-        const sharpenSelect = document.getElementById('image-sharpen');
-
-        const quality = (qualityInput ? Number(qualityInput.value) : 80) / 100;
-        const format = formatSelect ? formatSelect.value : 'jpg';
-        const needSharpen = sharpenSelect ? (sharpenSelect.value === 'yes') : false;
-
-        const progressWrapper = document.getElementById('image-progress');
-        const progressBar = document.getElementById('image-progress-bar');
-        const progressText = document.getElementById('image-progress-text');
-
-        const resultWrapper = document.getElementById('image-result');
-        const originalSizeSpan = document.getElementById('image-original-size');
-        const compressedSizeSpan = document.getElementById('image-compressed-size');
-
-        progressWrapper.classList.remove('hidden');
-        resultWrapper.classList.add('hidden');
-        showLoadingOverlay(true);
-
-        let totalOriginal = 0;
-        let totalCompressed = 0;
-        const outputFiles = [];
-
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            totalOriginal += file.size;
-
-            const newFile = await compressSingleImage(file, format, quality, needSharpen);
-            outputFiles.push(newFile);
-            totalCompressed += newFile.size;
-
-            const percent = Math.round(((i + 1) / files.length) * 100);
-            if (progressBar) progressBar.style.width = percent + '%';
-            if (progressText) progressText.textContent = percent + '%';
-        }
-
-        compressedFiles.image = { format, files: outputFiles };
-
-        if (originalSizeSpan) originalSizeSpan.textContent = humanFileSize(totalOriginal);
-        if (compressedSizeSpan) compressedSizeSpan.textContent = humanFileSize(totalCompressed);
-
-        progressWrapper.classList.add('hidden');
-        resultWrapper.classList.remove('hidden');
-        showLoadingOverlay(false);
-    }
-
-    // ====== PDF / 视频：先打通流程，压缩算法留 TODO ======
-    function simulateProcess(type) {
-        const files = uploadedFiles[type];
-        if (!files.length) return;
-
-        const progressWrapper = document.getElementById(type + '-progress');
-        const progressBar = document.getElementById(type + '-progress-bar');
-        const progressText = document.getElementById(type + '-progress-text');
-        const resultWrapper = document.getElementById(type + '-result');
-        const originalSizeSpan = document.getElementById(type + '-original-size');
-        const compressedSizeSpan = document.getElementById(type + '-compressed-size');
-
-        let totalSize = files.reduce((sum, f) => sum + f.size, 0);
-        if (originalSizeSpan) originalSizeSpan.textContent = humanFileSize(totalSize);
-
-        // 这里暂时模拟“压缩后 60% 大小”
-        const fakeCompressedSize = Math.round(totalSize * 0.6);
-        if (compressedSizeSpan) compressedSizeSpan.textContent = humanFileSize(fakeCompressedSize);
-
-        progressWrapper.classList.remove('hidden');
-        resultWrapper.classList.add('hidden');
-        showLoadingOverlay(true);
-
-        let percent = 0;
-        const timer = setInterval(() => {
-            percent += 10;
-            if (percent > 100) percent = 100;
-            if (progressBar) progressBar.style.width = percent + '%';
-            if (progressText) progressText.textContent = percent + '%';
-
-            if (percent === 100) {
-                clearInterval(timer);
-                progressWrapper.classList.add('hidden');
-                resultWrapper.classList.remove('hidden');
-                showLoadingOverlay(false);
-
-                // TODO：这里目前把“原文件”塞回去，后续你接入真实压缩后，把生成的新 File 替换这里
-                let format = null;
-                if (type === 'pdf') {
-                    const sel = document.getElementById('pdf-output-format');
-                    format = sel ? sel.value : 'pdf';
-                } else if (type === 'video') {
-                    const sel = document.getElementById('video-output-format');
-                    format = sel ? sel.value : 'mp4';
-                }
-                compressedFiles[type] = { format, files: files.slice() };
-            }
-        }, 200);
-    }
-
-    // ====== 绑定上传事件 ======
-    function bindUploadEvents() {
-        // PDF
-        const pdfInput = document.getElementById('pdf-upload');
-        if (pdfInput) {
-            pdfInput.addEventListener('change', (e) => {
-                uploadedFiles.pdf = Array.from(e.target.files || []);
-                renderFileList('pdf');
-                const btn = document.getElementById('pdf-process-btn');
-                if (btn) btn.disabled = uploadedFiles.pdf.length === 0;
-            });
-        }
-
-        // 视频
-        const videoInput = document.getElementById('video-upload');
-        if (videoInput) {
-            videoInput.addEventListener('change', (e) => {
-                uploadedFiles.video = Array.from(e.target.files || []);
-                renderFileList('video');
-                const btn = document.getElementById('video-process-btn');
-                if (btn) btn.disabled = uploadedFiles.video.length === 0;
-            });
-        }
-
-        // 图片
-        const imageInput = document.getElementById('image-upload');
-        if (imageInput) {
-            imageInput.addEventListener('change', (e) => {
-                uploadedFiles.image = Array.from(e.target.files || []);
-                renderFileList('image');
-                const btn = document.getElementById('image-process-btn');
-                if (btn) btn.disabled = uploadedFiles.image.length === 0;
-            });
-        }
-    }
-
-    // ====== 绑定按钮事件 ======
-    function bindButtonEvents() {
-        // 首页三个卡片上的“立即压缩”
-        // 已经在 HTML 上写了 onclick="navigateTo('/xxx')"，这里就不重复绑定了
-
-        // PDF 开始压缩
-        const pdfBtn = document.getElementById('pdf-process-btn');
-        if (pdfBtn) {
-            pdfBtn.addEventListener('click', () => {
-                // TODO: 替换为真实 PDF 压缩逻辑
-                simulateProcess('pdf');
-            });
-        }
-
-        // PDF 下载
-        const pdfDownloadBtn = document.getElementById('pdf-download-btn');
-        if (pdfDownloadBtn) {
-            pdfDownloadBtn.addEventListener('click', () => {
-                const data = compressedFiles.pdf;
-                if (!data || !data.files || !data.files.length) return;
-                data.files.forEach(file => {
-                    const url = URL.createObjectURL(file);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = file.name;
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                    setTimeout(() => URL.revokeObjectURL(url), 1000);
-                });
-            });
-        }
-
-        // 视频 开始压缩
-        const videoBtn = document.getElementById('video-process-btn');
-        if (videoBtn) {
-            videoBtn.addEventListener('click', () => {
-                // TODO: 替换为真实视频压缩（例如 ffmpeg.wasm）
-                simulateProcess('video');
-            });
-        }
-
-        // 视频 下载
-        const videoDownloadBtn = document.getElementById('video-download-btn');
-        if (videoDownloadBtn) {
-            videoDownloadBtn.addEventListener('click', () => {
-                const data = compressedFiles.video;
-                if (!data || !data.files || !data.files.length) return;
-                data.files.forEach(file => {
-                    const url = URL.createObjectURL(file);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = file.name;
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                    setTimeout(() => URL.revokeObjectURL(url), 1000);
-                });
-            });
-        }
-
-        // 图片 开始压缩
-        const imageBtn = document.getElementById('image-process-btn');
-        if (imageBtn) {
-            imageBtn.addEventListener('click', () => {
-                compressImageFiles();
-            });
-        }
-
-        // 图片 下载
-        const imageDownloadBtn = document.getElementById('image-download-btn');
-        if (imageDownloadBtn) {
-            imageDownloadBtn.addEventListener('click', () => {
-                const data = compressedFiles.image;
-                if (!data || !data.files || !data.files.length) return;
-                data.files.forEach(file => {
-                    const url = URL.createObjectURL(file);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = file.name;
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                    setTimeout(() => URL.revokeObjectURL(url), 1000);
-                });
-            });
-        }
-
-        // 图片质量滑块
-        const imageQualitySlider = document.getElementById('image-quality');
-        const imageQualityValue = document.getElementById('image-quality-value');
-        if (imageQualitySlider && imageQualityValue) {
-            imageQualitySlider.addEventListener('input', function () {
-                imageQualityValue.textContent = this.value;
-            });
-        }
-
-        // 移动端菜单按钮
-        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-        if (mobileMenuBtn) {
-            mobileMenuBtn.addEventListener('click', () => {
-                const mobileMenu = document.getElementById('mobile-menu');
-                if (mobileMenu) {
-                    mobileMenu.classList.toggle('hidden');
-                }
-            });
-        }
-    }
-
-    // ====== 初始化 ======
-    function initRouter() {
-        window.addEventListener('hashchange', handleHashChange);
-        handleHashChange(); // 首次加载
-        bindUploadEvents();
-        bindButtonEvents();
-    }
-
-    window.addEventListener('DOMContentLoaded', initRouter);
-</script>
+      if (lastDownloadUrl) {
+        URL.revokeObjectURL(lastDownloadUrl);
+        lastDownloadUrl = null;
+      }
+    });
+  </script>
+</body>
+</html>
