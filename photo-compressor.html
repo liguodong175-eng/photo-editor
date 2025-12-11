@@ -2,8 +2,12 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>批量图片压缩与清晰度修复（纯前端）</title>
+  <title>狗蛋图片压缩</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- 新增：蓝猫头像 favicon -->
+  <link rel="icon" type="image/svg+xml" href="blue-cat-icon.svg" />
+
   <style>
     * {
       box-sizing: border-box;
@@ -339,7 +343,7 @@
 <body>
   <div class="container">
     <div class="card">
-      <h1>批量图片压缩与清晰度修复</h1>
+      <h1>狗蛋图片压缩</h1>
       <div class="subtitle">
         所有处理均在浏览器本地完成，不上传服务器。支持多张图片批量压缩、格式转换、清晰度增强。
       </div>
@@ -498,7 +502,6 @@
     compressAllBtn.disabled = true;
     downloadAllBtn.disabled = true;
 
-    // 工具函数：格式化文件大小
     function formatFileSize(bytes) {
       if (!Number.isFinite(bytes)) return "-";
       if (bytes >= 1024 * 1024) {
@@ -507,7 +510,6 @@
       return (bytes / 1024).toFixed(2) + " KB";
     }
 
-    // DataURL 转 Blob
     function dataURLToBlob(dataURL) {
       const parts = dataURL.split(",");
       const match = parts[0].match(/:(.*?);/);
@@ -521,7 +523,6 @@
       return new Blob([u8arr], { type: mime });
     }
 
-    // 根据选择的输出格式 + 原始格式确定最终 MIME
     function getTargetMime(selected, originalMime) {
       if (selected === "original") {
         if (["image/jpeg", "image/png", "image/webp"].includes(originalMime)) {
@@ -532,7 +533,6 @@
       return selected;
     }
 
-    // MIME 对应扩展名
     function getExtensionByMime(mime) {
       switch (mime) {
         case "image/jpeg":
@@ -546,7 +546,6 @@
       }
     }
 
-    // 简单锐化卷积，amount ∈ [0,1]
     function applySharpen(imageData, amount) {
       if (amount <= 0) return imageData;
 
@@ -568,7 +567,6 @@
         return v;
       }
 
-      // 内部区域卷积
       for (let y = 1; y < h - 1; y++) {
         for (let x = 1; x < w - 1; x++) {
           let r = 0, g = 0, b = 0;
@@ -599,7 +597,6 @@
         }
       }
 
-      // 边缘复制原值
       for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
           if (x === 0 || x === w - 1 || y === 0 || y === h - 1) {
@@ -616,12 +613,10 @@
       return imageData;
     }
 
-    // 获取首张已加载的图片，用来展示示例尺寸
     function getFirstLoadedImageRecord() {
       return imageRecords.find((rec) => rec.img);
     }
 
-    // 更新示例目标尺寸显示
     function updateFirstTargetSizeLabel() {
       const rec = getFirstLoadedImageRecord();
       if (!rec) {
@@ -645,7 +640,6 @@
       }
     }
 
-    // 清空所有图片数据和预览
     function clearAllImages() {
       imageRecords.forEach((rec) => {
         if (rec.originalUrl) {
@@ -662,7 +656,6 @@
       targetSizeText.textContent = "-";
     }
 
-    // 创建单个图片的 UI 记录
     function createImageItem(file, index) {
       const row = document.createElement("div");
       row.className = "image-row";
@@ -756,7 +749,6 @@
 
       img.src = originalUrl;
 
-      // 单张下载按钮
       downloadBtnEl.addEventListener("click", function () {
         if (!record.compressedUrl || !record.compressedBlob) return;
         const a = document.createElement("a");
@@ -773,7 +765,6 @@
       return record;
     }
 
-    // 压缩单张图片
     function compressRecord(record, options) {
       if (!record.img) return;
 
@@ -856,7 +847,6 @@
       els.downloadBtnEl.disabled = false;
     }
 
-    // 事件：批量上传
     fileInput.addEventListener("change", function () {
       clearAllImages();
       const files = Array.from(fileInput.files || []);
@@ -878,7 +868,6 @@
       compressAllBtn.disabled = false;
     });
 
-    // 尺寸模式切换
     sizeModeRadios.forEach((radio) => {
       radio.addEventListener("change", function () {
         if (this.checked) {
@@ -895,7 +884,6 @@
       });
     });
 
-    // 比例滑块
     scaleRange.addEventListener("input", function () {
       const value = parseInt(scaleRange.value, 10) || 100;
       scaleValueText.textContent = value + "%";
@@ -904,7 +892,6 @@
       }
     });
 
-    // 手动尺寸输入
     manualWidthInput.addEventListener("input", function () {
       if (sizeMode === "manual") {
         updateFirstTargetSizeLabel();
@@ -916,13 +903,11 @@
       }
     });
 
-    // 质量滑块
     qualityRange.addEventListener("input", function () {
       const value = parseInt(qualityRange.value, 10) || 80;
       qualityValueText.textContent = value + "%";
     });
 
-    // 清晰度修复开关
     sharpenToggle.addEventListener("change", function () {
       const enabled = sharpenToggle.checked;
       sharpenRange.disabled = !enabled;
@@ -932,13 +917,11 @@
       }
     });
 
-    // 锐化强度滑块
     sharpenRange.addEventListener("input", function () {
       const value = parseInt(sharpenRange.value, 10) || 0;
       sharpenValueText.textContent = value + "%";
     });
 
-    // 开始压缩全部
     compressAllBtn.addEventListener("click", function () {
       if (imageRecords.length === 0) {
         alert("请先选择图片。");
@@ -973,7 +956,6 @@
       downloadAllBtn.disabled = !hasCompressed;
     });
 
-    // 批量下载
     downloadAllBtn.addEventListener("click", function () {
       const compressedRecords = imageRecords.filter((rec) => rec.compressedUrl && rec.compressedBlob);
       if (compressedRecords.length === 0) {
@@ -993,12 +975,10 @@
       });
     });
 
-    // 重置
     resetBtn.addEventListener("click", function () {
       fileInput.value = "";
       clearAllImages();
 
-      // 尺寸模式与控件
       sizeMode = "scale";
       sizeModeRadios.forEach((r) => {
         r.checked = r.value === "scale";
@@ -1012,17 +992,14 @@
       manualHeightInput.value = "";
       targetSizeText.textContent = "-";
 
-      // 质量
       qualityRange.value = 80;
       qualityValueText.textContent = "80%";
 
-      // 锐化
       sharpenToggle.checked = false;
       sharpenRange.disabled = true;
       sharpenRange.value = 0;
       sharpenValueText.textContent = "0%";
 
-      // 输出格式
       formatSelect.value = "original";
     });
   </script>
