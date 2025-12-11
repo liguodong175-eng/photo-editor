@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>在线图片压缩与清晰度修复（纯前端）</title>
+  <title>批量图片压缩与清晰度修复（纯前端）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     * {
@@ -18,7 +18,7 @@
     }
 
     .container {
-      max-width: 1000px;
+      max-width: 1100px;
       margin: 40px auto;
       padding: 24px 16px;
     }
@@ -77,7 +77,7 @@
 
     .controls-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 16px;
       margin-top: 8px;
     }
@@ -151,7 +151,7 @@
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease, opacity 0.08s ease;
       text-decoration: none;
       user-select: none;
     }
@@ -166,12 +166,18 @@
       background: #9ca3af;
       box-shadow: none;
       cursor: not-allowed;
+      opacity: 0.7;
     }
 
     .btn-secondary {
       background: #f3f4f6;
       color: #374151;
       border: 1px solid #d1d5db;
+    }
+
+    .btn-secondary:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
     }
 
     .btn:hover:not(:disabled) {
@@ -184,22 +190,16 @@
       box-shadow: 0 3px 10px rgba(15, 23, 42, 0.18);
     }
 
-    .btn-download {
-      margin-left: auto;
-    }
-
-    .preview-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 18px;
-      margin-top: 18px;
+    .btn-xs {
+      padding: 4px 10px;
+      font-size: 11px;
     }
 
     .preview-card {
       border-radius: 12px;
       border: 1px solid #e5e7eb;
       padding: 10px 12px 12px;
-      background: #f9fafb;
+      background: #ffffff;
     }
 
     .preview-title {
@@ -235,13 +235,13 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 160px;
-      max-height: 320px;
+      min-height: 120px;
+      max-height: 260px;
     }
 
     .preview-image-wrap img {
       max-width: 100%;
-      max-height: 320px;
+      max-height: 260px;
       display: none;
     }
 
@@ -249,6 +249,79 @@
       font-size: 11px;
       color: #9ca3af;
       margin-top: 6px;
+    }
+
+    .size-mode-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 4px;
+      font-size: 12px;
+    }
+
+    .radio-label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+    }
+
+    .size-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .size-row input[type="number"] {
+      width: 90px;
+    }
+
+    .image-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 10px;
+    }
+
+    .image-row {
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      padding: 10px 12px 12px;
+      background: #f9fafb;
+    }
+
+    .image-row-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .image-row-title {
+      font-weight: 600;
+      font-size: 13px;
+      color: #111827;
+    }
+
+    .image-row-meta {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .image-row-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+    }
+
+    .image-row-actions {
+      margin-top: 6px;
+      display: flex;
+      justify-content: flex-end;
     }
 
     @media (max-width: 640px) {
@@ -260,45 +333,77 @@
         flex-direction: column;
         align-items: flex-start;
       }
-
-      .btn-download {
-        margin-left: 0;
-      }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="card">
-      <h1>在线图片压缩与清晰度修复</h1>
+      <h1>批量图片压缩与清晰度修复</h1>
       <div class="subtitle">
-        所有处理均在浏览器本地完成，不上传服务器。支持格式转换、压缩质量调节与清晰度增强。
+        所有处理均在浏览器本地完成，不上传服务器。支持多张图片批量压缩、格式转换、清晰度增强。
       </div>
 
-      <!-- 上传图片 -->
+      <!-- 1. 批量上传 -->
       <div class="section">
-        <div class="section-title">1. 选择图片</div>
+        <div class="section-title">1. 选择图片（可多选）</div>
         <div class="file-input-wrapper">
-          <input type="file" id="fileInput" accept="image/*" />
-          <div class="hint">支持常见格式：JPG / PNG / WebP 等</div>
+          <input type="file" id="fileInput" accept="image/*" multiple />
+          <div class="hint">按住 Ctrl / ⌘ 或 Shift 可一次选择多张图片。</div>
         </div>
       </div>
 
-      <!-- 压缩参数设置 -->
+      <!-- 2. 参数设置 -->
       <div class="section">
-        <div class="section-title">2. 设置压缩参数</div>
+        <div class="section-title">2. 设置压缩参数（所有图片统一使用当前参数）</div>
         <div class="controls-grid">
+          <!-- 尺寸模式：比例 / 手动 -->
           <div class="control-group">
-            <div class="control-label">
-              输出尺寸（按比例缩放）：
-              <span class="value" id="scaleValueText">100%</span>
+            <div class="control-label">输出尺寸：</div>
+            <div class="size-mode-row">
+              <label class="radio-label">
+                <input type="radio" name="sizeMode" value="scale" checked />
+                按比例缩放
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="sizeMode" value="manual" />
+                手动输入尺寸（px）
+              </label>
             </div>
-            <input type="range" id="scaleRange" min="10" max="100" value="100" />
-            <div class="hint">
-              实际输出尺寸：<span id="targetSizeText">-</span>
+
+            <!-- 按比例 -->
+            <div class="size-mode" id="scaleModeBlock">
+              <div class="size-row">
+                <span class="hint">
+                  缩放比例：
+                  <span class="value" id="scaleValueText">100%</span>
+                </span>
+              </div>
+              <input type="range" id="scaleRange" min="10" max="100" value="100" />
+              <div class="hint">
+                示例输出尺寸（以首张图片为例）：<span id="targetSizeText">-</span>
+              </div>
+            </div>
+
+            <!-- 手动输入 -->
+            <div class="size-mode" id="manualModeBlock" style="display: none;">
+              <div class="size-row">
+                <label class="hint">
+                  宽度(px)：
+                  <input type="number" id="manualWidthInput" min="1" step="1" />
+                </label>
+                <label class="hint">
+                  高度(px)：
+                  <input type="number" id="manualHeightInput" min="1" step="1" />
+                </label>
+              </div>
+              <div class="hint">
+                将所有图片统一输出为指定尺寸，可能会产生轻微形变，如需严格等比可使用“按比例缩放”模式。
+              </div>
             </div>
           </div>
 
+          <!-- 质量 -->
           <div class="control-group">
             <div class="control-label">
               压缩质量（仅 JPEG / WebP 有效）：
@@ -310,19 +415,21 @@
             </div>
           </div>
 
+          <!-- 格式 -->
           <div class="control-group">
             <div class="control-label">输出格式：</div>
             <select id="formatSelect">
-              <option value="original">保持原格式</option>
-              <option value="image/jpeg">JPEG（有损压缩，体积较小）</option>
-              <option value="image/png">PNG（无损压缩，适合透明图）</option>
-              <option value="image/webp">WebP（高压缩率，现代浏览器）</option>
+              <option value="original">保持原格式（每张各自保持）</option>
+              <option value="image/jpeg">统一转为 JPEG（有损压缩，体积较小）</option>
+              <option value="image/png">统一转为 PNG（无损压缩，适合透明图）</option>
+              <option value="image/webp">统一转为 WebP（高压缩率，现代浏览器）</option>
             </select>
             <div class="hint">
               注意：将带透明通道的 PNG 转成 JPEG 时会自动填充白色背景。
             </div>
           </div>
 
+          <!-- 锐化 -->
           <div class="control-group">
             <div class="control-label">
               清晰度修复（锐化）强度：
@@ -331,81 +438,65 @@
             <input type="range" id="sharpenRange" min="0" max="100" value="0" disabled />
             <div class="checkbox-row">
               <input type="checkbox" id="sharpenToggle" />
-              <label for="sharpenToggle">开启清晰度修复（针对模糊略虚的图片）</label>
+              <label for="sharpenToggle">开启清晰度修复（针对略微模糊的图片）</label>
             </div>
           </div>
         </div>
 
         <div class="button-row">
-          <button class="btn btn-primary" id="compressBtn" disabled>开始压缩</button>
+          <button class="btn btn-primary" id="compressAllBtn" disabled>开始压缩全部</button>
           <button class="btn btn-secondary" id="resetBtn" type="button">重置</button>
-          <a class="btn btn-primary btn-download" id="downloadLink" href="#" download="compressed-image.jpg" style="display:none;">
-            下载压缩图片
-          </a>
+          <button class="btn btn-primary" id="downloadAllBtn" type="button" disabled>
+            批量下载压缩图片
+          </button>
+        </div>
+        <div class="hint" style="margin-top: 6px;">
+          提示：批量下载会依次触发多次浏览器下载操作，部分浏览器可能会弹出“允许多文件下载”的确认。
         </div>
       </div>
 
-      <!-- 预览区域 -->
+      <!-- 3. 预览与对比 -->
       <div class="section">
-        <div class="section-title">3. 预览与对比</div>
-        <div class="preview-grid">
-          <div class="preview-card">
-            <div class="preview-title">
-              原始图片
-              <span class="badge">源文件</span>
-            </div>
-            <div class="preview-info" id="originalInfo">尚未选择图片</div>
-            <div class="preview-image-wrap">
-              <img id="originalPreview" alt="原始图片预览" />
-            </div>
-          </div>
-
-          <div class="preview-card">
-            <div class="preview-title">
-              压缩后图片
-              <span class="badge" id="compressedBadge">待生成</span>
-            </div>
-            <div class="preview-info" id="compressedInfo">压缩后信息将显示在这里</div>
-            <div class="preview-image-wrap">
-              <img id="compressedPreview" alt="压缩后图片预览" />
-            </div>
-          </div>
+        <div class="section-title">3. 预览与对比（支持多张图片）</div>
+        <div id="imageList" class="image-list">
+          <div class="hint">请先在上方选择一张或多张图片。</div>
         </div>
         <div class="note">
-          温馨提示：如果图片非常大（例如超过 8000×8000 像素），在浏览器中处理可能会稍慢或内存吃紧，可先用系统工具粗略缩小后再上传精细压缩。
+          温馨提示：如果单张图片非常大（例如超过 8000×8000 像素），在浏览器中处理可能会稍慢或内存吃紧，可先用系统工具粗略缩小后再上传精细压缩。
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    // 全局状态
-    let originalFile = null;
-    let originalImage = null;
-    let originalMime = "";
-    let lastDownloadUrl = null;
+    // 全局状态：多张图片
+    let imageRecords = [];
+    let sizeMode = "scale"; // "scale" | "manual"
 
     // DOM 元素
     const fileInput = document.getElementById("fileInput");
     const scaleRange = document.getElementById("scaleRange");
     const scaleValueText = document.getElementById("scaleValueText");
     const targetSizeText = document.getElementById("targetSizeText");
+    const manualWidthInput = document.getElementById("manualWidthInput");
+    const manualHeightInput = document.getElementById("manualHeightInput");
     const qualityRange = document.getElementById("qualityRange");
     const qualityValueText = document.getElementById("qualityValueText");
     const formatSelect = document.getElementById("formatSelect");
     const sharpenRange = document.getElementById("sharpenRange");
     const sharpenValueText = document.getElementById("sharpenValueText");
     const sharpenToggle = document.getElementById("sharpenToggle");
-
-    const compressBtn = document.getElementById("compressBtn");
+    const compressAllBtn = document.getElementById("compressAllBtn");
     const resetBtn = document.getElementById("resetBtn");
-    const downloadLink = document.getElementById("downloadLink");
+    const downloadAllBtn = document.getElementById("downloadAllBtn");
+    const imageList = document.getElementById("imageList");
 
-    const originalInfo = document.getElementById("originalInfo");
-    const compressedInfo = document.getElementById("compressedInfo");
-    const compressedBadge = document.getElementById("compressedBadge");
-    const originalPreview = document.getElementById("originalPreview");
-    const compressedPreview = document.getElementById("compressedPreview");
+    const sizeModeRadios = document.querySelectorAll('input[name="sizeMode"]');
+    const scaleModeBlock = document.getElementById("scaleModeBlock");
+    const manualModeBlock = document.getElementById("manualModeBlock");
+
+    compressAllBtn.disabled = true;
+    downloadAllBtn.disabled = true;
 
     // 工具函数：格式化文件大小
     function formatFileSize(bytes) {
@@ -416,7 +507,7 @@
       return (bytes / 1024).toFixed(2) + " KB";
     }
 
-    // 工具函数：DataURL 转 Blob
+    // DataURL 转 Blob
     function dataURLToBlob(dataURL) {
       const parts = dataURL.split(",");
       const match = parts[0].match(/:(.*?);/);
@@ -430,17 +521,18 @@
       return new Blob([u8arr], { type: mime });
     }
 
-    function getTargetMime(selected, original) {
+    // 根据选择的输出格式 + 原始格式确定最终 MIME
+    function getTargetMime(selected, originalMime) {
       if (selected === "original") {
-        if (["image/jpeg", "image/png", "image/webp"].includes(original)) {
-          return original;
+        if (["image/jpeg", "image/png", "image/webp"].includes(originalMime)) {
+          return originalMime;
         }
-        // 其他格式统一转成 PNG
         return "image/png";
       }
       return selected;
     }
 
+    // MIME 对应扩展名
     function getExtensionByMime(mime) {
       switch (mime) {
         case "image/jpeg":
@@ -454,62 +546,7 @@
       }
     }
 
-    function updateOriginalInfo() {
-      if (!originalFile || !originalImage) {
-        originalInfo.textContent = "尚未选择图片";
-        return;
-      }
-      originalInfo.innerHTML =
-        "文件名：" +
-        originalFile.name +
-        "<br>格式：" +
-        (originalMime || "未知") +
-        "<br>尺寸：" +
-        originalImage.width +
-        " × " +
-        originalImage.height +
-        " px" +
-        "<br>大小：" +
-        formatFileSize(originalFile.size);
-    }
-
-    function updateTargetSize() {
-      if (!originalImage) {
-        targetSizeText.textContent = "-";
-        return;
-      }
-      const scale = parseInt(scaleRange.value, 10) || 100;
-      const w = Math.max(1, Math.round((originalImage.width * scale) / 100));
-      const h = Math.max(1, Math.round((originalImage.height * scale) / 100));
-      targetSizeText.textContent = w + " × " + h + " px";
-    }
-
-    function updateCompressedInfo(blob, width, height) {
-      if (!blob) {
-        compressedInfo.textContent = "压缩后信息将显示在这里";
-        compressedBadge.textContent = "待生成";
-        return;
-      }
-      const sizeText = formatFileSize(blob.size);
-      let ratioText = "";
-      if (originalFile && originalFile.size > 0) {
-        const ratio = ((blob.size / originalFile.size) * 100).toFixed(1);
-        ratioText = "（约为原始大小的 " + ratio + "%）";
-      }
-      compressedInfo.innerHTML =
-        "尺寸：" +
-        width +
-        " × " +
-        height +
-        " px" +
-        "<br>大小：" +
-        sizeText +
-        " " +
-        ratioText;
-      compressedBadge.textContent = "已生成";
-    }
-
-    // 简单锐化（卷积），amount ∈ [0, 1]
+    // 简单锐化卷积，amount ∈ [0,1]
     function applySharpen(imageData, amount) {
       if (amount <= 0) return imageData;
 
@@ -531,7 +568,7 @@
         return v;
       }
 
-      // 内部区域使用卷积
+      // 内部区域卷积
       for (let y = 1; y < h - 1; y++) {
         for (let x = 1; x < w - 1; x++) {
           let r = 0, g = 0, b = 0;
@@ -551,7 +588,6 @@
           }
 
           const idx = (y * w + x) * 4;
-          // 与原图做插值，避免过度锐化产生噪点
           const or = src[idx];
           const og = src[idx + 1];
           const ob = src[idx + 2];
@@ -563,7 +599,7 @@
         }
       }
 
-      // 边缘像素直接复制原值
+      // 边缘复制原值
       for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
           if (x === 0 || x === w - 1 || y === 0 || y === h - 1) {
@@ -580,89 +616,181 @@
       return imageData;
     }
 
-    // 事件绑定：文件选择
-    fileInput.addEventListener("change", function () {
-      const file = fileInput.files && fileInput.files[0];
-      if (!file) return;
+    // 获取首张已加载的图片，用来展示示例尺寸
+    function getFirstLoadedImageRecord() {
+      return imageRecords.find((rec) => rec.img);
+    }
 
-      if (!file.type.startsWith("image/")) {
-        alert("请选择图片文件（JPG / PNG / WebP 等）");
-        fileInput.value = "";
+    // 更新示例目标尺寸显示
+    function updateFirstTargetSizeLabel() {
+      const rec = getFirstLoadedImageRecord();
+      if (!rec) {
+        targetSizeText.textContent = "-";
         return;
       }
 
-      originalFile = file;
-      originalMime = file.type || "";
+      if (sizeMode === "scale") {
+        const scale = parseInt(scaleRange.value, 10) || 100;
+        const w = Math.max(1, Math.round((rec.originalWidth * scale) / 100));
+        const h = Math.max(1, Math.round((rec.originalHeight * scale) / 100));
+        targetSizeText.textContent = w + " × " + h + " px";
+      } else {
+        const mw = parseInt(manualWidthInput.value, 10);
+        const mh = parseInt(manualHeightInput.value, 10);
+        if (mw > 0 && mh > 0) {
+          targetSizeText.textContent = mw + " × " + mh + " px";
+        } else {
+          targetSizeText.textContent = "-";
+        }
+      }
+    }
 
-      const url = URL.createObjectURL(file);
+    // 清空所有图片数据和预览
+    function clearAllImages() {
+      imageRecords.forEach((rec) => {
+        if (rec.originalUrl) {
+          URL.revokeObjectURL(rec.originalUrl);
+        }
+        if (rec.compressedUrl) {
+          URL.revokeObjectURL(rec.compressedUrl);
+        }
+      });
+      imageRecords = [];
+      imageList.innerHTML = '<div class="hint">请先在上方选择一张或多张图片。</div>';
+      compressAllBtn.disabled = true;
+      downloadAllBtn.disabled = true;
+      targetSizeText.textContent = "-";
+    }
+
+    // 创建单个图片的 UI 记录
+    function createImageItem(file, index) {
+      const row = document.createElement("div");
+      row.className = "image-row";
+
+      row.innerHTML = `
+        <div class="image-row-header">
+          <div class="image-row-title">${file.name}</div>
+          <div class="image-row-meta">原始大小：${formatFileSize(file.size)}</div>
+        </div>
+        <div class="image-row-grid">
+          <div class="preview-card">
+            <div class="preview-title">
+              原始图片
+              <span class="badge">源文件</span>
+            </div>
+            <div class="preview-info js-original-info">加载中…</div>
+            <div class="preview-image-wrap">
+              <img class="js-original-img" alt="原始预览">
+            </div>
+          </div>
+          <div class="preview-card">
+            <div class="preview-title">
+              压缩后图片
+              <span class="badge js-compressed-badge">待生成</span>
+            </div>
+            <div class="preview-info js-compressed-info">压缩后信息将显示在这里</div>
+            <div class="preview-image-wrap">
+              <img class="js-compressed-img" alt="压缩预览">
+            </div>
+            <div class="image-row-actions">
+              <button type="button" class="btn btn-secondary btn-xs js-download-single" disabled>下载此图</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const originalInfoEl = row.querySelector(".js-original-info");
+      const originalImgEl = row.querySelector(".js-original-img");
+      const compressedInfoEl = row.querySelector(".js-compressed-info");
+      const compressedImgEl = row.querySelector(".js-compressed-img");
+      const compressedBadgeEl = row.querySelector(".js-compressed-badge");
+      const downloadBtnEl = row.querySelector(".js-download-single");
+
+      const originalUrl = URL.createObjectURL(file);
       const img = new Image();
+
+      const record = {
+        id: index,
+        file,
+        img: null,
+        originalUrl,
+        originalWidth: 0,
+        originalHeight: 0,
+        compressedBlob: null,
+        compressedUrl: null,
+        elements: {
+          originalInfoEl,
+          originalImgEl,
+          compressedInfoEl,
+          compressedImgEl,
+          compressedBadgeEl,
+          downloadBtnEl
+        }
+      };
+
       img.onload = function () {
-        originalImage = img;
-        originalPreview.src = url;
-        originalPreview.style.display = "block";
-        updateOriginalInfo();
-        updateTargetSize();
-        compressBtn.disabled = false;
+        record.img = img;
+        record.originalWidth = img.width;
+        record.originalHeight = img.height;
+
+        originalImgEl.src = originalUrl;
+        originalImgEl.style.display = "block";
+
+        originalInfoEl.innerHTML =
+          "格式：" +
+          (file.type || "未知") +
+          "<br>尺寸：" +
+          img.width +
+          " × " +
+          img.height +
+          " px" +
+          "<br>大小：" +
+          formatFileSize(file.size);
+
+        updateFirstTargetSizeLabel();
       };
+
       img.onerror = function () {
-        alert("图片加载失败，请尝试其他文件。");
-        originalFile = null;
-        originalImage = null;
-        originalMime = "";
-        originalPreview.src = "";
-        originalPreview.style.display = "none";
-        updateOriginalInfo();
-        compressBtn.disabled = true;
+        originalInfoEl.textContent = "图片加载失败";
       };
-      img.src = url;
-    });
 
-    // 事件：比例滑块
-    scaleRange.addEventListener("input", function () {
-      const value = parseInt(scaleRange.value, 10) || 100;
-      scaleValueText.textContent = value + "%";
-      updateTargetSize();
-    });
+      img.src = originalUrl;
 
-    // 事件：质量滑块
-    qualityRange.addEventListener("input", function () {
-      const value = parseInt(qualityRange.value, 10) || 80;
-      qualityValueText.textContent = value + "%";
-    });
+      // 单张下载按钮
+      downloadBtnEl.addEventListener("click", function () {
+        if (!record.compressedUrl || !record.compressedBlob) return;
+        const a = document.createElement("a");
+        a.href = record.compressedUrl;
+        const ext = getExtensionByMime(record.compressedBlob.type || getTargetMime(formatSelect.value, file.type || "image/png"));
+        const nameWithoutExt = (file.name || "image").replace(/\.[^/.]+$/, "");
+        a.download = nameWithoutExt + "-compressed" + ext;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
 
-    // 事件：清晰度修复开关
-    sharpenToggle.addEventListener("change", function () {
-      const enabled = sharpenToggle.checked;
-      sharpenRange.disabled = !enabled;
-      if (!enabled) {
-        sharpenRange.value = 0;
-        sharpenValueText.textContent = "0%";
-      }
-    });
+      imageList.appendChild(row);
+      return record;
+    }
 
-    // 事件：锐化强度滑块
-    sharpenRange.addEventListener("input", function () {
-      const value = parseInt(sharpenRange.value, 10) || 0;
-      sharpenValueText.textContent = value + "%";
-    });
+    // 压缩单张图片
+    function compressRecord(record, options) {
+      if (!record.img) return;
 
-    // 事件：开始压缩
-    compressBtn.addEventListener("click", function () {
-      if (!originalImage || !originalFile) {
-        alert("请先选择一张图片。");
-        return;
-      }
-
-      const scale = parseInt(scaleRange.value, 10) || 100;
-      const targetW = Math.max(1, Math.round((originalImage.width * scale) / 100));
-      const targetH = Math.max(1, Math.round((originalImage.height * scale) / 100));
-
-      const quality = (parseInt(qualityRange.value, 10) || 80) / 100;
-      const selectedFormat = formatSelect.value;
+      const { sizeMode, scale, manualWidth, manualHeight, selectedFormat, quality, sharpenAmount } = options;
+      const originalMime = record.file.type || "image/png";
       const mime = getTargetMime(selectedFormat, originalMime);
 
-      const sharpenEnabled = sharpenToggle.checked;
-      const sharpenAmount = sharpenEnabled ? (parseInt(sharpenRange.value, 10) || 0) / 100 : 0;
+      let targetW;
+      let targetH;
+
+      if (sizeMode === "scale") {
+        targetW = Math.max(1, Math.round(record.originalWidth * scale));
+        targetH = Math.max(1, Math.round(record.originalHeight * scale));
+      } else {
+        targetW = manualWidth > 0 ? manualWidth : record.originalWidth;
+        targetH = manualHeight > 0 ? manualHeight : record.originalHeight;
+      }
 
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
@@ -670,13 +798,12 @@
       canvas.width = targetW;
       canvas.height = targetH;
 
-      // JPEG 不支持透明，先填白
       if (mime === "image/jpeg") {
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(record.img, 0, 0, canvas.width, canvas.height);
 
       if (sharpenAmount > 0) {
         try {
@@ -684,7 +811,7 @@
           imgData = applySharpen(imgData, sharpenAmount);
           ctx.putImageData(imgData, 0, 0);
         } catch (e) {
-          console.warn("锐化处理失败（可能是跨域图片或图片太大）：", e);
+          console.warn("锐化处理失败（可能是图片过大）：", e);
         }
       }
 
@@ -697,59 +824,206 @@
 
       const blob = dataURLToBlob(dataURL);
 
-      // 更新预览
-      compressedPreview.src = dataURL;
-      compressedPreview.style.display = "block";
-      updateCompressedInfo(blob, canvas.width, canvas.height);
-
-      // 更新下载链接
-      if (lastDownloadUrl) {
-        URL.revokeObjectURL(lastDownloadUrl);
-        lastDownloadUrl = null;
+      if (record.compressedUrl) {
+        URL.revokeObjectURL(record.compressedUrl);
       }
-      const blobUrl = URL.createObjectURL(blob);
-      lastDownloadUrl = blobUrl;
-      const ext = getExtensionByMime(blob.type || mime);
-      downloadLink.href = blobUrl;
-      downloadLink.download = "compressed-image" + ext;
-      downloadLink.style.display = "inline-flex";
+
+      record.compressedBlob = blob;
+      record.compressedUrl = URL.createObjectURL(blob);
+
+      const els = record.elements;
+      els.compressedImgEl.src = record.compressedUrl;
+      els.compressedImgEl.style.display = "block";
+
+      const sizeText = formatFileSize(blob.size);
+      let ratioText = "";
+      if (record.file.size > 0) {
+        const ratio = ((blob.size / record.file.size) * 100).toFixed(1);
+        ratioText = "（约为原始大小的 " + ratio + "%）";
+      }
+
+      els.compressedInfoEl.innerHTML =
+        "尺寸：" +
+        targetW +
+        " × " +
+        targetH +
+        " px" +
+        "<br>大小：" +
+        sizeText +
+        " " +
+        ratioText;
+      els.compressedBadgeEl.textContent = "已生成";
+      els.downloadBtnEl.disabled = false;
+    }
+
+    // 事件：批量上传
+    fileInput.addEventListener("change", function () {
+      clearAllImages();
+      const files = Array.from(fileInput.files || []);
+      const imageFiles = files.filter((f) => f.type && f.type.startsWith("image/"));
+
+      if (imageFiles.length === 0) {
+        if (files.length > 0) {
+          alert("请选择图片文件（JPG / PNG / WebP 等）");
+        }
+        return;
+      }
+
+      imageList.innerHTML = "";
+      imageFiles.forEach((file, idx) => {
+        const rec = createImageItem(file, idx);
+        imageRecords.push(rec);
+      });
+
+      compressAllBtn.disabled = false;
     });
 
-    // 事件：重置
+    // 尺寸模式切换
+    sizeModeRadios.forEach((radio) => {
+      radio.addEventListener("change", function () {
+        if (this.checked) {
+          sizeMode = this.value;
+          if (sizeMode === "scale") {
+            scaleModeBlock.style.display = "block";
+            manualModeBlock.style.display = "none";
+          } else {
+            scaleModeBlock.style.display = "none";
+            manualModeBlock.style.display = "block";
+          }
+          updateFirstTargetSizeLabel();
+        }
+      });
+    });
+
+    // 比例滑块
+    scaleRange.addEventListener("input", function () {
+      const value = parseInt(scaleRange.value, 10) || 100;
+      scaleValueText.textContent = value + "%";
+      if (sizeMode === "scale") {
+        updateFirstTargetSizeLabel();
+      }
+    });
+
+    // 手动尺寸输入
+    manualWidthInput.addEventListener("input", function () {
+      if (sizeMode === "manual") {
+        updateFirstTargetSizeLabel();
+      }
+    });
+    manualHeightInput.addEventListener("input", function () {
+      if (sizeMode === "manual") {
+        updateFirstTargetSizeLabel();
+      }
+    });
+
+    // 质量滑块
+    qualityRange.addEventListener("input", function () {
+      const value = parseInt(qualityRange.value, 10) || 80;
+      qualityValueText.textContent = value + "%";
+    });
+
+    // 清晰度修复开关
+    sharpenToggle.addEventListener("change", function () {
+      const enabled = sharpenToggle.checked;
+      sharpenRange.disabled = !enabled;
+      if (!enabled) {
+        sharpenRange.value = 0;
+        sharpenValueText.textContent = "0%";
+      }
+    });
+
+    // 锐化强度滑块
+    sharpenRange.addEventListener("input", function () {
+      const value = parseInt(sharpenRange.value, 10) || 0;
+      sharpenValueText.textContent = value + "%";
+    });
+
+    // 开始压缩全部
+    compressAllBtn.addEventListener("click", function () {
+      if (imageRecords.length === 0) {
+        alert("请先选择图片。");
+        return;
+      }
+
+      const selectedFormat = formatSelect.value;
+      const quality = (parseInt(qualityRange.value, 10) || 80) / 100;
+      const sharpenEnabled = sharpenToggle.checked;
+      const sharpenAmount = sharpenEnabled ? (parseInt(sharpenRange.value, 10) || 0) / 100 : 0;
+      const scale = (parseInt(scaleRange.value, 10) || 100) / 100;
+      const manualWidth = parseInt(manualWidthInput.value, 10) || 0;
+      const manualHeight = parseInt(manualHeightInput.value, 10) || 0;
+
+      const options = {
+        sizeMode,
+        scale,
+        manualWidth,
+        manualHeight,
+        selectedFormat,
+        quality,
+        sharpenAmount
+      };
+
+      imageRecords.forEach((rec) => {
+        if (rec.img) {
+          compressRecord(rec, options);
+        }
+      });
+
+      const hasCompressed = imageRecords.some((rec) => rec.compressedUrl);
+      downloadAllBtn.disabled = !hasCompressed;
+    });
+
+    // 批量下载
+    downloadAllBtn.addEventListener("click", function () {
+      const compressedRecords = imageRecords.filter((rec) => rec.compressedUrl && rec.compressedBlob);
+      if (compressedRecords.length === 0) {
+        alert("请先完成压缩。");
+        return;
+      }
+
+      compressedRecords.forEach((rec, idx) => {
+        const a = document.createElement("a");
+        a.href = rec.compressedUrl;
+        const ext = getExtensionByMime(rec.compressedBlob.type || getTargetMime(formatSelect.value, rec.file.type || "image/png"));
+        const nameWithoutExt = (rec.file.name || "image-" + (idx + 1)).replace(/\.[^/.]+$/, "");
+        a.download = nameWithoutExt + "-compressed" + ext;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
+    });
+
+    // 重置
     resetBtn.addEventListener("click", function () {
       fileInput.value = "";
-      originalFile = null;
-      originalImage = null;
-      originalMime = "";
+      clearAllImages();
 
-      originalPreview.src = "";
-      originalPreview.style.display = "none";
-      compressedPreview.src = "";
-      compressedPreview.style.display = "none";
-
-      updateOriginalInfo();
-      updateCompressedInfo(null, 0, 0);
-      targetSizeText.textContent = "-";
+      // 尺寸模式与控件
+      sizeMode = "scale";
+      sizeModeRadios.forEach((r) => {
+        r.checked = r.value === "scale";
+      });
+      scaleModeBlock.style.display = "block";
+      manualModeBlock.style.display = "none";
 
       scaleRange.value = 100;
       scaleValueText.textContent = "100%";
+      manualWidthInput.value = "";
+      manualHeightInput.value = "";
+      targetSizeText.textContent = "-";
+
+      // 质量
       qualityRange.value = 80;
       qualityValueText.textContent = "80%";
 
+      // 锐化
       sharpenToggle.checked = false;
       sharpenRange.disabled = true;
       sharpenRange.value = 0;
       sharpenValueText.textContent = "0%";
 
+      // 输出格式
       formatSelect.value = "original";
-
-      compressBtn.disabled = true;
-      downloadLink.style.display = "none";
-
-      if (lastDownloadUrl) {
-        URL.revokeObjectURL(lastDownloadUrl);
-        lastDownloadUrl = null;
-      }
     });
   </script>
 </body>
